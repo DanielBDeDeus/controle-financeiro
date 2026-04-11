@@ -1,17 +1,51 @@
 import { useState } from "react";
 
+// Importa funções de lógica financeira que já criamos anteriormente
+import { calcularSaldoDisponivel, paraNumero } from "./utils/finance";
+
 export default function App() {
+  // ==============================
+  // STATES (armazenam dados do usuário)
+  // ==============================
+
+  // Salário mensal do usuário
   const [salario, setSalario] = useState("");
+
+  // Total gasto no débito
+  const [gastoDebito, setGastoDebito] = useState("");
+
+  // Valor da fatura atual do cartão de crédito
+  const [faturaAtual, setFaturaAtual] = useState("");
+
+  // ==============================
+  // CÁLCULOS
+  // ==============================
+
+  // Calcula automaticamente o saldo disponível usando a função utilitária
+  const saldoDisponivel = calcularSaldoDisponivel(
+    paraNumero(salario),
+    paraNumero(gastoDebito),
+    paraNumero(faturaAtual)
+  );
+
+  // ==============================
+  // RENDER
+  // ==============================
 
   return (
     <div style={styles.container}>
       <h1 style={styles.title}>Controle Financeiro</h1>
 
       <div style={styles.grid}>
+        {/* ==============================
+            CARD: USUÁRIO
+        ============================== */}
         <div style={styles.card}>
           <h2>Usuário</h2>
 
           <label>Salário mensal:</label>
+
+          {/* Input controlado → atualiza o state ao digitar */}
           <input
             type="number"
             value={salario}
@@ -22,18 +56,43 @@ export default function App() {
           <p>Salário: R$ {salario || 0}</p>
         </div>
 
+        {/* ==============================
+            CARD: RESUMO FINANCEIRO
+        ============================== */}
         <div style={styles.card}>
           <h2>Resumo</h2>
-          <p>Saldo disponível: R$ 0</p>
-          <p>Gastos no débito: R$ 0</p>
-          <p>Fatura atual: R$ 0</p>
+
+          {/* Mostra saldo calculado dinamicamente */}
+          <p>Saldo disponível: R$ {saldoDisponivel}</p>
+
+          <label>Gastos no débito:</label>
+          <input
+            type="number"
+            value={gastoDebito}
+            onChange={(e) => setGastoDebito(e.target.value)}
+            style={styles.input}
+          />
+
+          <label>Fatura atual:</label>
+          <input
+            type="number"
+            value={faturaAtual}
+            onChange={(e) => setFaturaAtual(e.target.value)}
+            style={styles.input}
+          />
         </div>
 
+        {/* ==============================
+            CARD: CARTÕES
+        ============================== */}
         <div style={styles.card}>
           <h2>Cartões</h2>
           <p>Nenhum cartão cadastrado</p>
         </div>
 
+        {/* ==============================
+            CARD: GASTOS
+        ============================== */}
         <div style={styles.card}>
           <h2>Gastos</h2>
           <p>Nenhum gasto registrado</p>
@@ -43,6 +102,9 @@ export default function App() {
   );
 }
 
+// ==============================
+// ESTILOS (Glassmorphism / Vista vibe)
+// ==============================
 const styles = {
   container: {
     minHeight: "100vh",
@@ -66,6 +128,7 @@ const styles = {
     margin: "0 auto",
   },
 
+  // Card com efeito de vidro (glassmorphism)
   card: {
     background: "rgba(255, 255, 255, 0.25)",
     backdropFilter: "blur(12px)",
