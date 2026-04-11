@@ -11,55 +11,84 @@ export default function App() {
   const [faturaAtual, setFaturaAtual] = useState("");
 
   // ==============================
-  // STATES DE CARTÕES
+  // CARTÕES
   // ==============================
 
   const [cartoes, setCartoes] = useState([]);
-
   const [nomeCartao, setNomeCartao] = useState("");
   const [tipoCartao, setTipoCartao] = useState("credito");
-
-  // Mensagem de erro (regra de negócio)
   const [erroCartao, setErroCartao] = useState("");
 
   // ==============================
-  // FUNÇÃO: ADICIONAR CARTÃO
+  // GASTOS
+  // ==============================
+
+  const [gastos, setGastos] = useState([]);
+  const [valorGasto, setValorGasto] = useState("");
+  const [cartaoSelecionado, setCartaoSelecionado] = useState("");
+
+  // ==============================
+  // ADICIONAR CARTÃO
   // ==============================
 
   function adicionarCartao() {
     const nomeNormalizado = nomeCartao.trim().toLowerCase();
 
-    // 1. Validação: campo vazio
     if (!nomeNormalizado) {
       setErroCartao("Digite um nome para o cartão.");
       return;
     }
 
-    // 2. Validação: duplicidade (nome + tipo)
-    const cartaoDuplicado = cartoes.some(
+    const duplicado = cartoes.some(
       (c) =>
         c.nome.toLowerCase() === nomeNormalizado &&
         c.tipo === tipoCartao
     );
 
-    if (cartaoDuplicado) {
+    if (duplicado) {
       setErroCartao("Esse cartão já existe com esse tipo.");
       return;
     }
 
-    // 3. Cria novo cartão
     const novoCartao = {
       id: Date.now(),
       nome: nomeCartao,
       tipo: tipoCartao,
     };
 
-    // 4. Atualiza lista
     setCartoes([...cartoes, novoCartao]);
-
-    // 5. Limpa inputs
     setNomeCartao("");
     setErroCartao("");
+  }
+
+  // ==============================
+  // ADICIONAR GASTO
+  // ==============================
+
+  function adicionarGasto() {
+    if (!valorGasto || !cartaoSelecionado) return;
+
+    const cartao = cartoes.find(
+      (c) => c.id === Number(cartaoSelecionado)
+    );
+
+    const novoGasto = {
+      id: Date.now(),
+      valor: paraNumero(valorGasto),
+      cartaoNome: cartao.nome,
+      tipo: cartao.tipo,
+    };
+
+    setGastos([...gastos, novoGasto]);
+
+    // Atualiza totais automaticamente
+    if (cartao.tipo === "debito") {
+      setGastoDebito((prev) => paraNumero(prev) + novoGasto.valor);
+    } else {
+      setFaturaAtual((prev) => paraNumero(prev) + novoGasto.valor);
+    }
+
+    setValorGasto("");
   }
 
   // ==============================
@@ -92,8 +121,6 @@ export default function App() {
             onChange={(e) => setSalario(e.target.value)}
             style={styles.input}
           />
-
-          <p>Salário: R$ {salario || 0}</p>
         </div>
 
         {/* RESUMO */}
@@ -101,22 +128,8 @@ export default function App() {
           <h2>Resumo</h2>
 
           <p>Saldo disponível: R$ {saldoDisponivel}</p>
-
-          <label>Gastos no débito:</label>
-          <input
-            type="number"
-            value={gastoDebito}
-            onChange={(e) => setGastoDebito(e.target.value)}
-            style={styles.input}
-          />
-
-          <label>Fatura atual:</label>
-          <input
-            type="number"
-            value={faturaAtual}
-            onChange={(e) => setFaturaAtual(e.target.value)}
-            style={styles.input}
-          />
+          <p>Débito: R$ {gastoDebito}</p>
+          <p>Fatura: R$ {faturaAtual}</p>
         </div>
 
         {/* CARTÕES */}
@@ -124,7 +137,6 @@ export default function App() {
           <h2>Cartões</h2>
 
           <input
-            type="text"
             placeholder="Nome do cartão"
             value={nomeCartao}
             onChange={(e) => setNomeCartao(e.target.value)}
@@ -140,33 +152,57 @@ export default function App() {
             <option value="debito">Débito</option>
           </select>
 
-          <button style={styles.button} onClick={adicionarCartao}>
-            Adicionar cartão
+          <button onClick={adicionarCartao} style={styles.button}>
+            Adicionar
           </button>
 
-          {/* ERRO */}
-          {erroCartao && (
-            <p style={styles.erro}>{erroCartao}</p>
-          )}
+          {erroCartao && <p style={styles.erro}>{erroCartao}</p>}
 
-          {/* LISTA */}
-          {cartoes.length === 0 ? (
-            <p>Nenhum cartão cadastrado</p>
-          ) : (
-            <ul style={styles.lista}>
-              {cartoes.map((cartao) => (
-                <li key={cartao.id} style={styles.itemLista}>
-                  {cartao.nome} ({cartao.tipo})
-                </li>
-              ))}
-            </ul>
-          )}
+          <ul>
+            {cartoes.map((c) => (
+              <li key={c.id}>
+                {c.nome} ({c.tipo})
+              </li>
+            ))}
+          </ul>
         </div>
 
         {/* GASTOS */}
         <div style={styles.card}>
           <h2>Gastos</h2>
-          <p>Nenhum gasto registrado</p>
+
+          <input
+            type="number"
+            placeholder="Valor"
+            value={valorGasto}
+            onChange={(e) => setValorGasto(e.target.value)}
+            style={styles.input}
+          />
+
+          <select
+            value={cartaoSelecionado}
+            onChange={(e) => setCartaoSelecionado(e.target.value)}
+            style={styles.input}
+          >
+            <option value="">Selecione um cartão</option>
+            {cartoes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nome} ({c.tipo})
+              </option>
+            ))}
+          </select>
+
+          <button onClick={adicionarGasto} style={styles.button}>
+            Adicionar gasto
+          </button>
+
+          <ul>
+            {gastos.map((g) => (
+              <li key={g.id}>
+                R$ {g.valor} - {g.cartaoNome} ({g.tipo})
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>
@@ -188,7 +224,6 @@ const styles = {
     textAlign: "center",
     marginBottom: "30px",
     color: "#004e7c",
-    textShadow: "0 2px 6px rgba(0,0,0,0.2)",
   },
 
   grid: {
@@ -200,14 +235,11 @@ const styles = {
   },
 
   card: {
-    background: "rgba(255, 255, 255, 0.25)",
+    background: "rgba(255,255,255,0.25)",
     backdropFilter: "blur(12px)",
-    WebkitBackdropFilter: "blur(12px)",
     borderRadius: "16px",
     padding: "20px",
     border: "1px solid rgba(255,255,255,0.3)",
-    boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
-    color: "#003049",
   },
 
   input: {
@@ -216,8 +248,6 @@ const styles = {
     marginTop: "10px",
     marginBottom: "10px",
     borderRadius: "8px",
-    border: "1px solid rgba(0,0,0,0.2)",
-    outline: "none",
   },
 
   button: {
@@ -228,21 +258,10 @@ const styles = {
     border: "none",
     borderRadius: "8px",
     cursor: "pointer",
-    marginTop: "10px",
   },
 
   erro: {
     color: "red",
-    marginTop: "10px",
     fontSize: "14px",
-  },
-
-  lista: {
-    marginTop: "15px",
-    paddingLeft: "15px",
-  },
-
-  itemLista: {
-    marginBottom: "5px",
   },
 };
