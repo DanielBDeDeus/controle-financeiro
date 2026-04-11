@@ -1,27 +1,53 @@
 import { useState } from "react";
 
-// Importa funções de lógica financeira que já criamos anteriormente
+// Importa funções de cálculo já criadas
 import { calcularSaldoDisponivel, paraNumero } from "./utils/finance";
 
 export default function App() {
   // ==============================
-  // STATES (armazenam dados do usuário)
+  // STATES PRINCIPAIS
   // ==============================
 
-  // Salário mensal do usuário
   const [salario, setSalario] = useState("");
-
-  // Total gasto no débito
   const [gastoDebito, setGastoDebito] = useState("");
-
-  // Valor da fatura atual do cartão de crédito
   const [faturaAtual, setFaturaAtual] = useState("");
 
   // ==============================
-  // CÁLCULOS
+  // STATES DE CARTÕES
   // ==============================
 
-  // Calcula automaticamente o saldo disponível usando a função utilitária
+  // Lista de cartões cadastrados
+  const [cartoes, setCartoes] = useState([]);
+
+  // Inputs do formulário de cartão
+  const [nomeCartao, setNomeCartao] = useState("");
+  const [tipoCartao, setTipoCartao] = useState("credito");
+
+  // ==============================
+  // FUNÇÃO: ADICIONAR CARTÃO
+  // ==============================
+
+  function adicionarCartao() {
+    // Evita adicionar cartão vazio
+    if (!nomeCartao.trim()) return;
+
+    const novoCartao = {
+      id: Date.now(), // ID simples baseado no tempo
+      nome: nomeCartao,
+      tipo: tipoCartao,
+    };
+
+    // Adiciona o novo cartão na lista
+    setCartoes([...cartoes, novoCartao]);
+
+    // Limpa o input
+    setNomeCartao("");
+  }
+
+  // ==============================
+  // CÁLCULO DE SALDO
+  // ==============================
+
   const saldoDisponivel = calcularSaldoDisponivel(
     paraNumero(salario),
     paraNumero(gastoDebito),
@@ -37,15 +63,11 @@ export default function App() {
       <h1 style={styles.title}>Controle Financeiro</h1>
 
       <div style={styles.grid}>
-        {/* ==============================
-            CARD: USUÁRIO
-        ============================== */}
+        {/* ===================== USUÁRIO ===================== */}
         <div style={styles.card}>
           <h2>Usuário</h2>
 
           <label>Salário mensal:</label>
-
-          {/* Input controlado → atualiza o state ao digitar */}
           <input
             type="number"
             value={salario}
@@ -56,13 +78,10 @@ export default function App() {
           <p>Salário: R$ {salario || 0}</p>
         </div>
 
-        {/* ==============================
-            CARD: RESUMO FINANCEIRO
-        ============================== */}
+        {/* ===================== RESUMO ===================== */}
         <div style={styles.card}>
           <h2>Resumo</h2>
 
-          {/* Mostra saldo calculado dinamicamente */}
           <p>Saldo disponível: R$ {saldoDisponivel}</p>
 
           <label>Gastos no débito:</label>
@@ -82,17 +101,47 @@ export default function App() {
           />
         </div>
 
-        {/* ==============================
-            CARD: CARTÕES
-        ============================== */}
+        {/* ===================== CARTÕES ===================== */}
         <div style={styles.card}>
           <h2>Cartões</h2>
-          <p>Nenhum cartão cadastrado</p>
+
+          {/* FORMULÁRIO DE CADASTRO */}
+          <input
+            type="text"
+            placeholder="Nome do cartão"
+            value={nomeCartao}
+            onChange={(e) => setNomeCartao(e.target.value)}
+            style={styles.input}
+          />
+
+          <select
+            value={tipoCartao}
+            onChange={(e) => setTipoCartao(e.target.value)}
+            style={styles.input}
+          >
+            <option value="credito">Crédito</option>
+            <option value="debito">Débito</option>
+          </select>
+
+          <button style={styles.button} onClick={adicionarCartao}>
+            Adicionar cartão
+          </button>
+
+          {/* LISTA DE CARTÕES */}
+          {cartoes.length === 0 ? (
+            <p>Nenhum cartão cadastrado</p>
+          ) : (
+            <ul style={styles.lista}>
+              {cartoes.map((cartao) => (
+                <li key={cartao.id} style={styles.itemLista}>
+                  {cartao.nome} ({cartao.tipo})
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
-        {/* ==============================
-            CARD: GASTOS
-        ============================== */}
+        {/* ===================== GASTOS ===================== */}
         <div style={styles.card}>
           <h2>Gastos</h2>
           <p>Nenhum gasto registrado</p>
@@ -103,7 +152,7 @@ export default function App() {
 }
 
 // ==============================
-// ESTILOS (Glassmorphism / Vista vibe)
+// ESTILOS (Glass + UI)
 // ==============================
 const styles = {
   container: {
@@ -128,7 +177,6 @@ const styles = {
     margin: "0 auto",
   },
 
-  // Card com efeito de vidro (glassmorphism)
   card: {
     background: "rgba(255, 255, 255, 0.25)",
     backdropFilter: "blur(12px)",
@@ -148,5 +196,25 @@ const styles = {
     borderRadius: "8px",
     border: "1px solid rgba(0,0,0,0.2)",
     outline: "none",
+  },
+
+  button: {
+    width: "100%",
+    padding: "10px",
+    background: "#0077b6",
+    color: "white",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    marginTop: "10px",
+  },
+
+  lista: {
+    marginTop: "15px",
+    paddingLeft: "15px",
+  },
+
+  itemLista: {
+    marginBottom: "5px",
   },
 };
