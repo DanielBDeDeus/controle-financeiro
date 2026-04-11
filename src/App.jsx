@@ -3,32 +3,24 @@ import { calcularSaldoDisponivel, paraNumero } from "./utils/finance";
 
 export default function App() {
   // ==============================
-  // STATES PRINCIPAIS
+  // STATES
   // ==============================
 
   const [salario, setSalario] = useState("");
   const [gastoDebito, setGastoDebito] = useState("");
   const [faturaAtual, setFaturaAtual] = useState("");
 
-  // ==============================
-  // CARTÕES
-  // ==============================
-
   const [cartoes, setCartoes] = useState([]);
   const [nomeCartao, setNomeCartao] = useState("");
   const [tipoCartao, setTipoCartao] = useState("credito");
   const [erroCartao, setErroCartao] = useState("");
-
-  // ==============================
-  // GASTOS
-  // ==============================
 
   const [gastos, setGastos] = useState([]);
   const [valorGasto, setValorGasto] = useState("");
   const [cartaoSelecionado, setCartaoSelecionado] = useState("");
 
   // ==============================
-  // ADICIONAR CARTÃO
+  // CARTÕES
   // ==============================
 
   function adicionarCartao() {
@@ -62,7 +54,7 @@ export default function App() {
   }
 
   // ==============================
-  // ADICIONAR GASTO
+  // GASTOS
   // ==============================
 
   function adicionarGasto() {
@@ -72,20 +64,22 @@ export default function App() {
       (c) => c.id === Number(cartaoSelecionado)
     );
 
+    const valor = paraNumero(valorGasto);
+
     const novoGasto = {
       id: Date.now(),
-      valor: paraNumero(valorGasto),
+      valor,
       cartaoNome: cartao.nome,
       tipo: cartao.tipo,
     };
 
     setGastos([...gastos, novoGasto]);
 
-    // Atualiza totais automaticamente
+    // Atualiza totais
     if (cartao.tipo === "debito") {
-      setGastoDebito((prev) => paraNumero(prev) + novoGasto.valor);
+      setGastoDebito((prev) => paraNumero(prev) + valor);
     } else {
-      setFaturaAtual((prev) => paraNumero(prev) + novoGasto.valor);
+      setFaturaAtual((prev) => paraNumero(prev) + valor);
     }
 
     setValorGasto("");
@@ -109,12 +103,27 @@ export default function App() {
     <div style={styles.container}>
       <h1 style={styles.title}>Controle Financeiro</h1>
 
+      {/* LEGENDA */}
+      <div style={styles.legenda}>
+        <span style={{ ...styles.badge, background: "#e63946" }}>
+          🔴 Débito (sai do dinheiro agora)
+        </span>
+
+        <span style={{ ...styles.badge, background: "#ffb703" }}>
+          🟡 Crédito (vai para fatura)
+        </span>
+
+        <span style={{ ...styles.badge, background: "#2a9d8f" }}>
+          🟢 Saldo disponível
+        </span>
+      </div>
+
       <div style={styles.grid}>
         {/* USUÁRIO */}
         <div style={styles.card}>
           <h2>Usuário</h2>
 
-          <label>Salário mensal:</label>
+          <label>Salário:</label>
           <input
             type="number"
             value={salario}
@@ -127,9 +136,17 @@ export default function App() {
         <div style={styles.card}>
           <h2>Resumo</h2>
 
-          <p>Saldo disponível: R$ {saldoDisponivel}</p>
-          <p>Débito: R$ {gastoDebito}</p>
-          <p>Fatura: R$ {faturaAtual}</p>
+          <p style={{ color: "#2a9d8f", fontWeight: "bold" }}>
+            Saldo: R$ {saldoDisponivel}
+          </p>
+
+          <p style={{ color: "#e63946" }}>
+            Débito: R$ {gastoDebito}
+          </p>
+
+          <p style={{ color: "#ffb703" }}>
+            Fatura: R$ {faturaAtual}
+          </p>
         </div>
 
         {/* CARTÕES */}
@@ -161,7 +178,16 @@ export default function App() {
           <ul>
             {cartoes.map((c) => (
               <li key={c.id}>
-                {c.nome} ({c.tipo})
+                {c.nome}{" "}
+                <span
+                  style={{
+                    ...styles.badge,
+                    background:
+                      c.tipo === "debito" ? "#e63946" : "#ffb703",
+                  }}
+                >
+                  {c.tipo}
+                </span>
               </li>
             ))}
           </ul>
@@ -184,7 +210,7 @@ export default function App() {
             onChange={(e) => setCartaoSelecionado(e.target.value)}
             style={styles.input}
           >
-            <option value="">Selecione um cartão</option>
+            <option value="">Selecione</option>
             {cartoes.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nome} ({c.tipo})
@@ -199,7 +225,16 @@ export default function App() {
           <ul>
             {gastos.map((g) => (
               <li key={g.id}>
-                R$ {g.valor} - {g.cartaoNome} ({g.tipo})
+                R$ {g.valor} - {g.cartaoNome}
+                <span
+                  style={{
+                    ...styles.badge,
+                    background:
+                      g.tipo === "debito" ? "#e63946" : "#ffb703",
+                  }}
+                >
+                  {g.tipo}
+                </span>
               </li>
             ))}
           </ul>
@@ -212,26 +247,39 @@ export default function App() {
 // ==============================
 // ESTILOS
 // ==============================
+
 const styles = {
   container: {
     minHeight: "100vh",
     background: "linear-gradient(135deg, #bde0ff, #e0f7ff)",
     padding: "30px",
-    fontFamily: "Segoe UI, sans-serif",
+    fontFamily: "Segoe UI",
   },
 
   title: {
     textAlign: "center",
-    marginBottom: "30px",
-    color: "#004e7c",
+    marginBottom: "20px",
+  },
+
+  legenda: {
+    display: "flex",
+    justifyContent: "center",
+    gap: "10px",
+    marginBottom: "20px",
+    flexWrap: "wrap",
+  },
+
+  badge: {
+    color: "white",
+    padding: "5px 10px",
+    borderRadius: "8px",
+    fontSize: "12px",
   },
 
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
     gap: "20px",
-    maxWidth: "1000px",
-    margin: "0 auto",
   },
 
   card: {
@@ -239,15 +287,12 @@ const styles = {
     backdropFilter: "blur(12px)",
     borderRadius: "16px",
     padding: "20px",
-    border: "1px solid rgba(255,255,255,0.3)",
   },
 
   input: {
     width: "100%",
     padding: "10px",
-    marginTop: "10px",
-    marginBottom: "10px",
-    borderRadius: "8px",
+    margin: "10px 0",
   },
 
   button: {
@@ -257,11 +302,9 @@ const styles = {
     color: "white",
     border: "none",
     borderRadius: "8px",
-    cursor: "pointer",
   },
 
   erro: {
     color: "red",
-    fontSize: "14px",
   },
 };
