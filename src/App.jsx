@@ -1,6 +1,4 @@
 import { useState } from "react";
-
-// Importa funções de cálculo já criadas
 import { calcularSaldoDisponivel, paraNumero } from "./utils/finance";
 
 export default function App() {
@@ -16,36 +14,56 @@ export default function App() {
   // STATES DE CARTÕES
   // ==============================
 
-  // Lista de cartões cadastrados
   const [cartoes, setCartoes] = useState([]);
 
-  // Inputs do formulário de cartão
   const [nomeCartao, setNomeCartao] = useState("");
   const [tipoCartao, setTipoCartao] = useState("credito");
+
+  // Mensagem de erro (regra de negócio)
+  const [erroCartao, setErroCartao] = useState("");
 
   // ==============================
   // FUNÇÃO: ADICIONAR CARTÃO
   // ==============================
 
   function adicionarCartao() {
-    // Evita adicionar cartão vazio
-    if (!nomeCartao.trim()) return;
+    const nomeNormalizado = nomeCartao.trim().toLowerCase();
 
+    // 1. Validação: campo vazio
+    if (!nomeNormalizado) {
+      setErroCartao("Digite um nome para o cartão.");
+      return;
+    }
+
+    // 2. Validação: duplicidade (nome + tipo)
+    const cartaoDuplicado = cartoes.some(
+      (c) =>
+        c.nome.toLowerCase() === nomeNormalizado &&
+        c.tipo === tipoCartao
+    );
+
+    if (cartaoDuplicado) {
+      setErroCartao("Esse cartão já existe com esse tipo.");
+      return;
+    }
+
+    // 3. Cria novo cartão
     const novoCartao = {
-      id: Date.now(), // ID simples baseado no tempo
+      id: Date.now(),
       nome: nomeCartao,
       tipo: tipoCartao,
     };
 
-    // Adiciona o novo cartão na lista
+    // 4. Atualiza lista
     setCartoes([...cartoes, novoCartao]);
 
-    // Limpa o input
+    // 5. Limpa inputs
     setNomeCartao("");
+    setErroCartao("");
   }
 
   // ==============================
-  // CÁLCULO DE SALDO
+  // CÁLCULO
   // ==============================
 
   const saldoDisponivel = calcularSaldoDisponivel(
@@ -63,7 +81,7 @@ export default function App() {
       <h1 style={styles.title}>Controle Financeiro</h1>
 
       <div style={styles.grid}>
-        {/* ===================== USUÁRIO ===================== */}
+        {/* USUÁRIO */}
         <div style={styles.card}>
           <h2>Usuário</h2>
 
@@ -78,7 +96,7 @@ export default function App() {
           <p>Salário: R$ {salario || 0}</p>
         </div>
 
-        {/* ===================== RESUMO ===================== */}
+        {/* RESUMO */}
         <div style={styles.card}>
           <h2>Resumo</h2>
 
@@ -101,11 +119,10 @@ export default function App() {
           />
         </div>
 
-        {/* ===================== CARTÕES ===================== */}
+        {/* CARTÕES */}
         <div style={styles.card}>
           <h2>Cartões</h2>
 
-          {/* FORMULÁRIO DE CADASTRO */}
           <input
             type="text"
             placeholder="Nome do cartão"
@@ -127,7 +144,12 @@ export default function App() {
             Adicionar cartão
           </button>
 
-          {/* LISTA DE CARTÕES */}
+          {/* ERRO */}
+          {erroCartao && (
+            <p style={styles.erro}>{erroCartao}</p>
+          )}
+
+          {/* LISTA */}
           {cartoes.length === 0 ? (
             <p>Nenhum cartão cadastrado</p>
           ) : (
@@ -141,7 +163,7 @@ export default function App() {
           )}
         </div>
 
-        {/* ===================== GASTOS ===================== */}
+        {/* GASTOS */}
         <div style={styles.card}>
           <h2>Gastos</h2>
           <p>Nenhum gasto registrado</p>
@@ -152,7 +174,7 @@ export default function App() {
 }
 
 // ==============================
-// ESTILOS (Glass + UI)
+// ESTILOS
 // ==============================
 const styles = {
   container: {
@@ -207,6 +229,12 @@ const styles = {
     borderRadius: "8px",
     cursor: "pointer",
     marginTop: "10px",
+  },
+
+  erro: {
+    color: "red",
+    marginTop: "10px",
+    fontSize: "14px",
   },
 
   lista: {
