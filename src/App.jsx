@@ -1,6 +1,17 @@
 import { useState } from "react";
 import { calcularSaldoDisponivel, paraNumero } from "./utils/finance";
 
+// ==============================
+// IMPORT DO GRÁFICO
+// ==============================
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+} from "recharts";
+
 export default function App() {
   // ==============================
   // STATES
@@ -75,7 +86,6 @@ export default function App() {
 
     setGastos([...gastos, novoGasto]);
 
-    // Atualiza totais
     if (cartao.tipo === "debito") {
       setGastoDebito((prev) => paraNumero(prev) + valor);
     } else {
@@ -86,7 +96,7 @@ export default function App() {
   }
 
   // ==============================
-  // CÁLCULO
+  // CÁLCULOS
   // ==============================
 
   const saldoDisponivel = calcularSaldoDisponivel(
@@ -94,6 +104,26 @@ export default function App() {
     paraNumero(gastoDebito),
     paraNumero(faturaAtual)
   );
+
+  // ==============================
+  // DADOS DO GRÁFICO (COM PROTEÇÃO)
+  // ==============================
+
+  const rawData = [
+    { name: "Débito", value: paraNumero(gastoDebito) || 0 },
+    { name: "Crédito", value: paraNumero(faturaAtual) || 0 },
+  ];
+
+  const hasData = rawData.some((d) => d.value > 0);
+
+  const dataGrafico = hasData
+    ? rawData
+    : [
+        { name: "Débito", value: 1 },
+        { name: "Crédito", value: 1 },
+      ];
+
+  const COLORS = ["#e63946", "#ffb703"];
 
   // ==============================
   // RENDER
@@ -178,7 +208,7 @@ export default function App() {
           <ul>
             {cartoes.map((c) => (
               <li key={c.id}>
-                {c.nome}{" "}
+                {c.nome}
                 <span
                   style={{
                     ...styles.badge,
@@ -239,6 +269,33 @@ export default function App() {
             ))}
           </ul>
         </div>
+
+        {/* GRÁFICO */}
+        <div style={{ ...styles.card, textAlign: "center" }}>
+          <h2>Distribuição de gastos</h2>
+
+          {!hasData && (
+            <p style={{ fontSize: "12px", opacity: 0.6 }}>
+              Adicione gastos para visualizar o gráfico
+            </p>
+          )}
+
+          <PieChart width={320} height={260}>
+            <Pie
+              data={dataGrafico}
+              dataKey="value"
+              nameKey="name"
+              outerRadius={90}
+            >
+              {dataGrafico.map((entry, index) => (
+                <Cell key={index} fill={COLORS[index]} />
+              ))}
+            </Pie>
+
+            <Tooltip />
+            <Legend />
+          </PieChart>
+        </div>
       </div>
     </div>
   );
@@ -274,6 +331,7 @@ const styles = {
     padding: "5px 10px",
     borderRadius: "8px",
     fontSize: "12px",
+    marginLeft: "8px",
   },
 
   grid: {
