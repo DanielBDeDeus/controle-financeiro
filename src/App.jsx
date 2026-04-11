@@ -46,7 +46,7 @@ export default function App() {
 const styles = {
   container: {
     minHeight: "100vh",
-    background: "#cfefff",
+    background: "linear-gradient(135deg, #bde0ff, #e0f7ff)",
     padding: "30px",
     fontFamily: "Segoe UI, sans-serif",
   },
@@ -54,7 +54,8 @@ const styles = {
   title: {
     textAlign: "center",
     marginBottom: "30px",
-    color: "#005f99",
+    color: "#004e7c",
+    textShadow: "0 2px 6px rgba(0,0,0,0.2)",
   },
 
   grid: {
@@ -66,16 +67,23 @@ const styles = {
   },
 
   card: {
-    background: "white",
+    background: "rgba(255, 255, 255, 0.25)",
+    backdropFilter: "blur(12px)",
+    WebkitBackdropFilter: "blur(12px)",
+    borderRadius: "16px",
     padding: "20px",
-    borderRadius: "12px",
-    boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+    border: "1px solid rgba(255,255,255,0.3)",
+    boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
+    color: "#003049",
   },
 
   input: {
     width: "100%",
-    padding: "8px",
+    padding: "10px",
     marginTop: "10px",
     marginBottom: "10px",
+    borderRadius: "8px",
+    border: "1px solid rgba(0,0,0,0.2)",
+    outline: "none",
   },
 };
