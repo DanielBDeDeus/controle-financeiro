@@ -983,10 +983,7 @@ card: {
     "0 12px 28px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
   height: "fit-content",
 },
-cardScroll: {
-  maxHeight: "500px",
-  overflowY: "auto",
-},
+
       cardGrafico: {
         textAlign: "center",
       },
@@ -1304,7 +1301,7 @@ footer: {
 
         {/* LINHA 1: PERFIL ATIVO + LEITURA + GRÁFICO */}
         <div style={styles.topGrid}>
-          <div style={{ ...styles.card, ...styles.cardScroll }}>
+          <div style={styles.card}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Visão ativa</h2>
               <span style={styles.cardChip}>Perfil</span>
@@ -1364,7 +1361,7 @@ footer: {
 
           </div>
 
-          <div style={{ ...styles.card, ...styles.cardScroll }}>
+          <div style={styles.card}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Leitura da visão</h2>
               <span style={styles.cardChip}>Filtro</span>
@@ -1441,7 +1438,7 @@ footer: {
 
         {/* LINHA 2: PESSOAS + RESUMO */}
         <div style={styles.topGrid}>
-          <div style={{ ...styles.card, ...styles.cardScroll }}>
+          <div style={styles.card}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Pessoas</h2>
               <span style={styles.cardChip}>Rendas</span>
@@ -1533,7 +1530,7 @@ footer: {
             </ul>
           </div>
 
-          <div style={{ ...styles.card, ...styles.cardScroll }}>
+          <div style={styles.card}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Resumo</h2>
               <span style={styles.cardChip}>Leitura</span>
@@ -1575,7 +1572,7 @@ footer: {
 
         {/* LINHA INFERIOR */}
         <div style={styles.bottomGrid}>
-          <div style={{ ...styles.card, ...styles.cardScroll }}>
+          <div style={styles.card}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Cartões</h2>
               <span style={styles.cardChip}>Cadastro</span>
@@ -1623,7 +1620,7 @@ footer: {
             </ul>
           </div>
 
-          <div style={{ ...styles.card, ...styles.cardScroll }}>
+          <div style={styles.card}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Gastos</h2>
               <span style={styles.cardChip}>Registro</span>
