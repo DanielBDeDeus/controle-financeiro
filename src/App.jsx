@@ -252,7 +252,7 @@ export default function App() {
     () => lerTextoStorage(STORAGE_KEYS.perfilAtivo) || "household"
   );
 
-  // Tema da visão Household
+  // Tema da visão conjunta (Household)
 
 const [resetEtapa, setResetEtapa] = useState(
   () => Number(lerTextoStorage(STORAGE_KEYS.resetEtapa) || 0)
@@ -613,6 +613,11 @@ const quemPagou = pessoas.find(
   (p) => p.id === Number(quemPagouSelecionado)
 );
 
+if (!quemPagou) {
+  setErroGasto("Pessoa que pagou inválida.");
+  return;
+}
+
 const novoGasto = {
   id: Date.now(),
   nome: nomeNormalizado,
@@ -688,17 +693,17 @@ function editarGasto(gasto) {
   }, [ehHousehold, perfilAtivo, pessoas]);
 
 const temaAtivo = useMemo(() => {
-  // INDIVIDUAL
+  // VISÃO INDIVIDUAL
   if (!ehHousehold && pessoaAtiva) {
     return THEMES[pessoaAtiva.tema] ?? THEMES.cassette_neon;
   }
 
-  // FALLBACK
+  // CASO PADRÃO
   if (pessoas.length === 0) {
     return THEMES.cassette_neon;
   }
 
-  // HOUSEHOLD (average)
+  // HOUSEHOLD (média das cores)
   const cores = pessoas.map(
     (p) => THEMES[p.tema] ?? THEMES.cassette_neon
   );
@@ -968,7 +973,7 @@ topGrid: {
 },
 bottomGrid: {
   display: "grid",
-  gridTemplateColumns: "1fr 1fr", // clean 2 columns
+  gridTemplateColumns: "1fr 1fr", // 2 colunas
   gap: "18px",
   alignItems: "start",
   marginBottom: "18px",
@@ -1470,7 +1475,11 @@ footer: {
               placeholder="Ex.: 3500"
             />
 
-            <button onClick={salvarPessoa} style={styles.button}>
+            <button
+  onClick={salvarPessoa}
+  style={styles.button}
+  disabled={!nomePessoa || !salarioPessoa}
+>
               {pessoaEmEdicaoId ? "Salvar pessoa" : "Adicionar pessoa"}
             </button>
 
@@ -1486,7 +1495,14 @@ footer: {
             {erroPessoa && <p style={styles.erro}>{erroPessoa}</p>}
 
             <ul style={styles.lista}>
-              {pessoas.map((pessoa) => (
+              {pessoas.length === 0 ? (
+  <li style={styles.itemLista}>
+  <span style={styles.textoAuxiliar}>
+    Nenhuma pessoa cadastrada.
+  </span>
+</li>
+) : (
+  pessoas.map((pessoa) => (
                 <li key={pessoa.id} style={styles.itemListaColuna}>
                   <div style={styles.itemLinhaSuperior}>
                     <span style={styles.itemText}>
@@ -1528,7 +1544,7 @@ footer: {
                     </button>
                   </div>
                 </li>
-              ))}
+              )))}
             </ul>
           </div>
 
@@ -1596,14 +1612,25 @@ footer: {
               <option value="debito">Débito</option>
             </select>
 
-            <button onClick={adicionarCartao} style={styles.button}>
+            <button
+  onClick={adicionarCartao}
+  style={styles.button}
+  disabled={!nomeCartao}
+>
               Adicionar cartão
             </button>
 
             {erroCartao && <p style={styles.erro}>{erroCartao}</p>}
 
             <ul style={styles.lista}>
-              {cartoes.map((cartao) => (
+              {cartoes.length === 0 ? (
+  <li style={styles.itemLista}>
+  <span style={styles.textoAuxiliar}>
+    Nenhum cartão cadastrado.
+  </span>
+</li>
+) : (
+  cartoes.map((cartao) => (
                 <li key={cartao.id} style={styles.itemLista}>
                   <span style={styles.itemText}>{cartao.nome}</span>
 
@@ -1618,11 +1645,12 @@ footer: {
                     {cartao.tipo}
                   </span>
                 </li>
-              ))}
+              ))
+              )}
             </ul>
           </div>
 
-          <div style={styles.card}>
+          <div style={{ ...styles.card, position: "sticky", top: "20px" }}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Gastos</h2>
               <span style={styles.cardChip}>Registro</span>
@@ -1688,7 +1716,17 @@ footer: {
               ))}
             </select>
 
-            <button onClick={adicionarGasto} style={styles.button}>
+            <button
+  onClick={adicionarGasto}
+  style={styles.button}
+  disabled={
+    !nomeGasto ||
+    !valorGasto ||
+    !cartaoSelecionado ||
+    !pessoaSelecionada ||
+    !quemPagouSelecionado
+  }
+>
               {gastoEmEdicaoId ? "Salvar gasto" : "Adicionar gasto"}
             </button>
 
@@ -1704,7 +1742,14 @@ footer: {
             {erroGasto && <p style={styles.erro}>{erroGasto}</p>}
 
             <ul style={styles.lista}>
-              {gastosFiltrados.map((gasto) => (
+              {gastosFiltrados.length === 0 ? (
+  <li style={styles.itemLista}>
+  <span style={styles.textoAuxiliar}>
+    Nenhum gasto registrado.
+  </span>
+</li>
+) : (
+  gastosFiltrados.map((gasto) => (
                 <li key={gasto.id} style={styles.itemListaColuna}>
                   <div style={styles.itemLinhaSuperior}>
                     <span style={styles.itemText}>
@@ -1739,7 +1784,8 @@ footer: {
                     </button>
                   </div>
                 </li>
-              ))}
+              ))
+              )}
             </ul>
           </div>
         </div>
