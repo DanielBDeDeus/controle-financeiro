@@ -16,7 +16,8 @@ const STORAGE_KEYS = {
   cartoes: "controle-financeiro:cartoes",
   gastos: "controle-financeiro:gastos",
   perfilAtivo: "controle-financeiro:perfil-ativo",
-  temaHousehold: "controle-financeiro:tema-household",
+  mostrarCentavos: "controle-financeiro:mostrar-centavos",
+  resetEtapa: "controle-financeiro:reset-etapa",
 };
 
 // ==============================
@@ -224,6 +225,22 @@ function lerJsonStorage(chave, valorPadrao) {
     return valorPadrao;
   }
 }
+function formatarMoeda(valor, mostrarCentavos = true) {
+  const numeroSeguro = paraNumero(valor);
+
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: mostrarCentavos ? 2 : 0,
+    maximumFractionDigits: mostrarCentavos ? 2 : 0,
+  }).format(numeroSeguro);
+}
+
+const RESET_MESSAGES = [
+  "☢ Tem certeza que quer apagar tudo?",
+  "☢ Isso vai apagar TODOS os dados salvos.",
+  "☢ ÚLTIMA CHANCE. Apagar tudo mesmo?",
+];
 
 export default function App() {
   // ==============================
@@ -237,9 +254,14 @@ export default function App() {
   );
 
   // Tema da visão Household
-  const [temaHousehold, setTemaHousehold] = useState(
-    () => lerTextoStorage(STORAGE_KEYS.temaHousehold) || "cassette_neon"
-  );
+
+  const [mostrarCentavos, setMostrarCentavos] = useState(
+  () => lerTextoStorage(STORAGE_KEYS.mostrarCentavos) !== "false"
+);
+
+const [resetEtapa, setResetEtapa] = useState(
+  () => Number(lerTextoStorage(STORAGE_KEYS.resetEtapa) || 0)
+);
 
   // ==============================
   // STATES DE PESSOAS
@@ -340,11 +362,18 @@ export default function App() {
   }, [perfilAtivo]);
 
   useEffect(() => {
-    window.localStorage.setItem(
-      STORAGE_KEYS.temaHousehold,
-      temaHousehold
-    );
-  }, [temaHousehold]);
+  window.localStorage.setItem(
+    STORAGE_KEYS.mostrarCentavos,
+    String(mostrarCentavos)
+  );
+}, [mostrarCentavos]);
+
+useEffect(() => {
+  window.localStorage.setItem(
+    STORAGE_KEYS.resetEtapa,
+    String(resetEtapa)
+  );
+}, [resetEtapa]);
 
   // ==============================
   // FUNÇÕES DE PESSOAS
@@ -642,14 +671,55 @@ export default function App() {
     );
   }, [ehHousehold, perfilAtivo, pessoas]);
 
-  const temaAtivo = useMemo(() => {
-    if (ehHousehold) {
-      return THEMES[temaHousehold] ?? THEMES.cassette_neon;
-    }
+const temaAtivo = useMemo(() => {
+  // INDIVIDUAL
+  if (!ehHousehold && pessoaAtiva) {
+    return THEMES[pessoaAtiva.tema] ?? THEMES.cassette_neon;
+  }
 
-    const chaveTemaPessoa = pessoaAtiva?.tema ?? "cassette_neon";
-    return THEMES[chaveTemaPessoa] ?? THEMES.cassette_neon;
-  }, [ehHousehold, temaHousehold, pessoaAtiva]);
+  // FALLBACK
+  if (pessoas.length === 0) {
+    return THEMES.cassette_neon;
+  }
+
+  // HOUSEHOLD (average)
+  const cores = pessoas.map(
+    (p) => THEMES[p.tema] ?? THEMES.cassette_neon
+  );
+
+  const avg = (arr) =>
+    Math.floor(arr.reduce((a, b) => a + b, 0) / arr.length);
+
+  const hexToRgb = (hex) => {
+    const h = hex.replace("#", "");
+    return [
+      parseInt(h.substring(0, 2), 16),
+      parseInt(h.substring(2, 4), 16),
+      parseInt(h.substring(4, 6), 16),
+    ];
+  };
+
+  const rgbToHex = ([r, g, b]) =>
+    `#${[r, g, b]
+      .map((v) => v.toString(16).padStart(2, "0"))
+      .join("")}`;
+
+  const bgColors = cores.map((t) => {
+    const match = t.pageBg.match(/#([0-9a-f]{6})/i);
+    return hexToRgb(match ? match[0] : "#0d141c");
+  });
+
+  const avgColor = [
+    avg(bgColors.map((c) => c[0])),
+    avg(bgColors.map((c) => c[1])),
+    avg(bgColors.map((c) => c[2])),
+  ];
+
+  return {
+    ...THEMES.cassette_neon,
+    pageBg: rgbToHex(avgColor),
+  };
+}, [ehHousehold, pessoaAtiva, pessoas]);
 
   const gastosFiltrados = useMemo(() => {
     if (ehHousehold) {
@@ -704,7 +774,6 @@ export default function App() {
 
   function alterarTemaAtivo(novoTema) {
     if (ehHousehold) {
-      setTemaHousehold(novoTema);
       return;
     }
 
@@ -712,10 +781,51 @@ export default function App() {
       alterarTemaDaPessoa(pessoaAtiva.id, novoTema);
     }
   }
+  function limparTudo() {
+  setPessoas([]);
+  setNomePessoa("");
+  setSalarioPessoa("");
+  setPessoaEmEdicaoId(null);
+  setErroPessoa("");
 
-  const valorTemaSelecionado = ehHousehold
-    ? temaHousehold
-    : pessoaAtiva?.tema || "cassette_neon";
+  setCartoes([]);
+  setNomeCartao("");
+  setTipoCartao("credito");
+  setErroCartao("");
+
+  setGastos([]);
+  setNomeGasto("");
+  setValorGasto("");
+  setCartaoSelecionado("");
+  setPessoaSelecionada("");
+  setGastoEmEdicaoId(null);
+  setErroGasto("");
+
+  setGastoDebito(0);
+  setFaturaAtual(0);
+
+  setPerfilAtivo("household");
+  setMostrarCentavos(true);
+  setResetEtapa(0);
+
+  Object.values(STORAGE_KEYS).forEach((chave) => {
+    window.localStorage.removeItem(chave);
+  });
+  setTimeout(() => {
+  window.location.reload();
+}, 50);
+}
+
+function lidarComResetTotal() {
+  if (resetEtapa < 2) {
+    setResetEtapa((etapaAnterior) => etapaAnterior + 1);
+    return;
+  }
+
+  limparTudo();
+}
+
+const valorTemaSelecionado = pessoaAtiva?.tema || "cassette_neon";
 
   const styles = useMemo(
     () => ({
@@ -1082,11 +1192,61 @@ export default function App() {
         cursor: "pointer",
         fontWeight: "700",
       },
+      resetBox: {
+  marginTop: "18px",
+  padding: "14px",
+  borderRadius: "16px",
+  background:
+    "linear-gradient(180deg, rgba(62,8,8,0.14) 0%, rgba(102,14,14,0.18) 100%)",
+  border: "1px solid rgba(255, 77, 77, 0.26)",
+  boxShadow:
+    "0 0 0 1px rgba(255, 191, 0, 0.10), inset 0 0 22px rgba(255, 77, 77, 0.08)",
+},
+
+resetTitle: {
+  margin: 0,
+  fontSize: "14px",
+  fontWeight: "800",
+  color: "#ffb300",
+  letterSpacing: "0.5px",
+  textTransform: "uppercase",
+},
+
+resetText: {
+  marginTop: "8px",
+  marginBottom: "12px",
+  fontSize: "13px",
+  lineHeight: "1.5",
+  color: temaAtivo.cardText,
+},
+
+resetButton: {
+  width: "100%",
+  padding: "14px",
+  background:
+    "linear-gradient(180deg, #ffef5a 0%, #ffb300 42%, #ff5a36 100%)",
+  color: "#2b1300",
+  border: "1px solid rgba(255, 120, 0, 0.35)",
+  borderRadius: "14px",
+  cursor: "pointer",
+  fontWeight: "900",
+  marginTop: "4px",
+  boxShadow:
+    "0 0 18px rgba(255, 179, 0, 0.25), 0 8px 24px rgba(255, 90, 54, 0.22)",
+  textTransform: "uppercase",
+  letterSpacing: "0.4px",
+},
+footer: {
+  marginTop: "40px",
+  paddingTop: "20px",
+  borderTop: "1px solid rgba(255,255,255,0.08)",
+},
     }),
     [temaAtivo]
   );
 
-  return (    <div style={styles.container}>
+  return (
+        <div style={styles.container}>
       <div style={styles.shell}>
         {/* BARRA SUPERIOR / IDENTIDADE VISUAL */}
         <div style={styles.machineBar}>
@@ -1102,11 +1262,11 @@ export default function App() {
         {/* CABEÇALHO */}
         <div style={styles.header}>
           <div>
-            <h1 style={styles.title}>Controle Financeiro</h1>
+            <h1 style={styles.title}>DividimOS</h1>
             <p style={styles.subtitle}>
-              Painel pessoal para visualizar saldo, cartões, gastos e impacto
-              financeiro em tempo real.
-            </p>
+  Sistema de controle financeiro para casais, com visão individual,
+  visão conjunta e personalização do dashboard.
+</p>
           </div>
 
           <div style={styles.legenda}>
@@ -1146,17 +1306,41 @@ export default function App() {
               ))}
             </select>
 
-            <label style={styles.label}>Tema do dashboard</label>
+            {pessoas.length === 0 ? (
+              <p style={styles.erro}>
+                Cadastre ao menos uma pessoa para liberar perfis individuais.
+              </p>
+            ) : (
+              <p style={{ ...styles.textoAuxiliar, marginTop: "6px" }}>
+                Perfis disponíveis: {pessoas.map((pessoa) => pessoa.nome).join(", ")}
+              </p>
+            )}
+
+{!ehHousehold && (
+  <>
+    <label style={styles.label}>Tema do dashboard</label>
+    <select
+      value={valorTemaSelecionado}
+      onChange={(e) => alterarTemaAtivo(e.target.value)}
+      style={styles.input}
+    >
+      {Object.entries(THEMES).map(([chave, tema]) => (
+        <option key={chave} value={chave}>
+          {tema.label}
+        </option>
+      ))}
+    </select>
+  </>
+)}
+
+            <label style={styles.label}>Exibir centavos</label>
             <select
-              value={valorTemaSelecionado}
-              onChange={(e) => alterarTemaAtivo(e.target.value)}
+              value={mostrarCentavos ? "sim" : "nao"}
+              onChange={(e) => setMostrarCentavos(e.target.value === "sim")}
               style={styles.input}
             >
-              {Object.entries(THEMES).map(([chave, tema]) => (
-                <option key={chave} value={chave}>
-                  {tema.label}
-                </option>
-              ))}
+              <option value="sim">Sim (R$ 1.234,56)</option>
+              <option value="nao">Não (R$ 1.235)</option>
             </select>
 
             <div style={styles.kpiStack}>
@@ -1167,6 +1351,8 @@ export default function App() {
                 </span>
               </div>
             </div>
+
+
           </div>
 
           <div style={styles.card}>
@@ -1179,7 +1365,7 @@ export default function App() {
               <div style={styles.kpiRow}>
                 <span style={styles.kpiLabel}>Salário considerado</span>
                 <span style={{ ...styles.kpiValue, ...styles.resumoSaldo }}>
-                  R$ {salarioTotalFiltrado}
+                  {formatarMoeda(salarioTotalFiltrado, mostrarCentavos)}
                 </span>
               </div>
 
@@ -1263,7 +1449,7 @@ export default function App() {
 
             <label style={styles.label}>Salário da pessoa</label>
             <input
-              type="number"
+              type="text"
               value={salarioPessoa}
               onChange={(e) => setSalarioPessoa(e.target.value)}
               style={styles.input}
@@ -1290,7 +1476,7 @@ export default function App() {
                 <li key={pessoa.id} style={styles.itemListaColuna}>
                   <div style={styles.itemLinhaSuperior}>
                     <span style={styles.itemText}>
-                      {pessoa.nome} · R$ {pessoa.salario}
+                      {pessoa.nome} · {formatarMoeda(pessoa.salario, mostrarCentavos)}
                     </span>
 
                     <span style={{ ...styles.badgeMini, ...styles.badgeSaldo }}>
@@ -1344,28 +1530,28 @@ export default function App() {
                   {ehHousehold ? "Salário total" : "Salário do perfil"}
                 </span>
                 <span style={{ ...styles.kpiValue, ...styles.resumoSaldo }}>
-                  R$ {salarioTotalFiltrado}
+                  {formatarMoeda(salarioTotalFiltrado, mostrarCentavos)}
                 </span>
               </div>
 
               <div style={styles.kpiRow}>
                 <span style={styles.kpiLabel}>Saldo disponível</span>
                 <span style={{ ...styles.kpiValue, ...styles.resumoSaldo }}>
-                  R$ {saldoDisponivel}
+                  {formatarMoeda(saldoDisponivel, mostrarCentavos)}
                 </span>
               </div>
 
               <div style={styles.kpiRow}>
                 <span style={styles.kpiLabel}>Saída imediata</span>
                 <span style={{ ...styles.kpiValue, ...styles.resumoDebito }}>
-                  R$ {gastoDebitoFiltrado}
+                  {formatarMoeda(gastoDebitoFiltrado, mostrarCentavos)}
                 </span>
               </div>
 
               <div style={styles.kpiRow}>
                 <span style={styles.kpiLabel}>Fatura acumulada</span>
                 <span style={{ ...styles.kpiValue, ...styles.resumoCredito }}>
-                  R$ {faturaAtualFiltrada}
+                  {formatarMoeda(faturaAtualFiltrada, mostrarCentavos)}
                 </span>
               </div>
             </div>
@@ -1437,7 +1623,7 @@ export default function App() {
             />
 
             <input
-              type="number"
+              type="text"
               placeholder="Valor"
               value={valorGasto}
               onChange={(e) => setValorGasto(e.target.value)}
@@ -1490,7 +1676,7 @@ export default function App() {
                 <li key={gasto.id} style={styles.itemListaColuna}>
                   <div style={styles.itemLinhaSuperior}>
                     <span style={styles.itemText}>
-                      {gasto.nome} · R$ {gasto.valor} · {gasto.cartaoNome} ·{" "}
+                      {gasto.nome} · {formatarMoeda(gasto.valor, mostrarCentavos)} · {gasto.cartaoNome} ·{" "}
                       {gasto.pessoaNome}
                     </span>
 
@@ -1527,6 +1713,27 @@ export default function App() {
           </div>
         </div>
       </div>
+      <div style={styles.footer}>
+  <div style={styles.resetBox}>
+    <p style={styles.resetTitle}>☢ Zona de risco</p>
+    <p style={styles.resetText}>
+      Isso apagará todos os dados do sistema. Use apenas em último caso.
+    </p>
+
+    <button onClick={lidarComResetTotal} style={styles.resetButton}>
+      ☢ {RESET_MESSAGES[resetEtapa] ?? RESET_MESSAGES[2]}
+    </button>
+
+    {resetEtapa > 0 && (
+      <button
+        onClick={() => setResetEtapa(0)}
+        style={styles.buttonSecundario}
+      >
+        Cancelar
+      </button>
+    )}
+  </div>
+</div>
     </div>
   );
 }
