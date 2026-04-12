@@ -15,13 +15,189 @@ const STORAGE_KEYS = {
   faturaAtual: "controle-financeiro:fatura-atual",
   cartoes: "controle-financeiro:cartoes",
   gastos: "controle-financeiro:gastos",
+  perfilAtivo: "controle-financeiro:perfil-ativo",
+  temaHousehold: "controle-financeiro:tema-household",
+};
+
+// ==============================
+// TEMAS PREDEFINIDOS
+// ==============================
+const THEMES = {
+  cassette_neon: {
+    label: "Cassette Neon",
+    pageBg:
+      "radial-gradient(circle at top left, rgba(72,185,255,0.10), transparent 28%), radial-gradient(circle at top right, rgba(87,211,164,0.08), transparent 18%), linear-gradient(180deg, #0d141c 0%, #0a1016 100%)",
+    shellBg:
+      "linear-gradient(180deg, rgba(18,24,32,0.94) 0%, rgba(12,17,24,0.96) 100%)",
+    shellBorder: "rgba(255,255,255,0.08)",
+    shellShadow:
+      "0 24px 80px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)",
+    title: "#eaf2fb",
+    subtitle: "#8fa2b8",
+    machineLabel: "#95a2b3",
+    cardBg:
+      "linear-gradient(180deg, rgba(245,248,252,0.96) 0%, rgba(225,232,240,0.94) 100%)",
+    cardBorder: "rgba(255,255,255,0.6)",
+    cardTitle: "#1b3147",
+    cardText: "#223548",
+    chipBg: "rgba(17,24,39,0.06)",
+    chipBorder: "rgba(17,24,39,0.08)",
+    chipText: "#5c6b7b",
+    inputBg: "#111821",
+    inputText: "#f2f7fb",
+    inputBorder: "rgba(19, 33, 48, 0.12)",
+    kpiBg: "rgba(255,255,255,0.45)",
+    kpiBorder: "rgba(0,0,0,0.05)",
+    rowBg: "rgba(255,255,255,0.42)",
+    rowBorder: "rgba(0,0,0,0.04)",
+    buttonBg: "linear-gradient(180deg, #48b9ff 0%, #2f87b7 100%)",
+    buttonShadow: "0 8px 20px rgba(47, 135, 183, 0.22)",
+    buttonSecondaryBg: "rgba(17,24,39,0.08)",
+    buttonSecondaryText: "#203243",
+    buttonSecondaryBorder: "rgba(17,24,39,0.12)",
+  },
+
+  vista_glass: {
+    label: "Vista Glass",
+    pageBg:
+      "radial-gradient(circle at top left, rgba(130,212,255,0.18), transparent 24%), radial-gradient(circle at bottom right, rgba(173,255,244,0.14), transparent 22%), linear-gradient(180deg, #b8dcff 0%, #dff3ff 50%, #c8ebff 100%)",
+    shellBg:
+      "linear-gradient(180deg, rgba(234,246,255,0.58) 0%, rgba(202,232,255,0.46) 100%)",
+    shellBorder: "rgba(255,255,255,0.75)",
+    shellShadow:
+      "0 24px 80px rgba(59,104,148,0.20), inset 0 1px 0 rgba(255,255,255,0.85)",
+    title: "#1b4f7a",
+    subtitle: "#4e7391",
+    machineLabel: "#5e7b93",
+    cardBg:
+      "linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(236,247,255,0.70) 100%)",
+    cardBorder: "rgba(255,255,255,0.85)",
+    cardTitle: "#244e73",
+    cardText: "#2f4d66",
+    chipBg: "rgba(255,255,255,0.55)",
+    chipBorder: "rgba(54,100,140,0.12)",
+    chipText: "#5a7690",
+    inputBg: "rgba(238,248,255,0.95)",
+    inputText: "#24445c",
+    inputBorder: "rgba(65, 114, 157, 0.15)",
+    kpiBg: "rgba(255,255,255,0.62)",
+    kpiBorder: "rgba(65,114,157,0.08)",
+    rowBg: "rgba(255,255,255,0.58)",
+    rowBorder: "rgba(65,114,157,0.08)",
+    buttonBg: "linear-gradient(180deg, #6cc9ff 0%, #3f99d3 100%)",
+    buttonShadow: "0 8px 20px rgba(63, 153, 211, 0.22)",
+    buttonSecondaryBg: "rgba(255,255,255,0.50)",
+    buttonSecondaryText: "#24445c",
+    buttonSecondaryBorder: "rgba(65,114,157,0.12)",
+  },
+
+  msn_bubblegum: {
+    label: "MSN Bubblegum",
+    pageBg:
+      "radial-gradient(circle at top left, rgba(255,167,214,0.18), transparent 22%), radial-gradient(circle at top right, rgba(143,221,255,0.18), transparent 22%), linear-gradient(180deg, #f6dfff 0%, #e9f7ff 52%, #d8eeff 100%)",
+    shellBg:
+      "linear-gradient(180deg, rgba(255,247,255,0.82) 0%, rgba(239,247,255,0.76) 100%)",
+    shellBorder: "rgba(255,255,255,0.82)",
+    shellShadow:
+      "0 24px 80px rgba(117,81,136,0.16), inset 0 1px 0 rgba(255,255,255,0.88)",
+    title: "#6f4b8b",
+    subtitle: "#7a6d88",
+    machineLabel: "#8c7ea0",
+    cardBg:
+      "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(247,241,255,0.88) 100%)",
+    cardBorder: "rgba(255,255,255,0.90)",
+    cardTitle: "#684d84",
+    cardText: "#5d5670",
+    chipBg: "rgba(255,255,255,0.65)",
+    chipBorder: "rgba(111,75,139,0.10)",
+    chipText: "#7e6f95",
+    inputBg: "#fff7ff",
+    inputText: "#5d5670",
+    inputBorder: "rgba(111,75,139,0.10)",
+    kpiBg: "rgba(255,255,255,0.70)",
+    kpiBorder: "rgba(111,75,139,0.08)",
+    rowBg: "rgba(255,255,255,0.68)",
+    rowBorder: "rgba(111,75,139,0.08)",
+    buttonBg: "linear-gradient(180deg, #8fd8ff 0%, #6fa9ff 100%)",
+    buttonShadow: "0 8px 20px rgba(111, 169, 255, 0.20)",
+    buttonSecondaryBg: "rgba(255,255,255,0.52)",
+    buttonSecondaryText: "#5d5670",
+    buttonSecondaryBorder: "rgba(111,75,139,0.10)",
+  },
+
+  midnight_terminal: {
+    label: "Midnight Terminal",
+    pageBg:
+      "radial-gradient(circle at top left, rgba(74,180,165,0.10), transparent 22%), radial-gradient(circle at bottom right, rgba(255,184,77,0.08), transparent 18%), linear-gradient(180deg, #070b10 0%, #0c1117 100%)",
+    shellBg:
+      "linear-gradient(180deg, rgba(11,17,22,0.96) 0%, rgba(8,12,16,0.98) 100%)",
+    shellBorder: "rgba(106,139,173,0.12)",
+    shellShadow:
+      "0 24px 80px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.03)",
+    title: "#dfeaf5",
+    subtitle: "#8a9bab",
+    machineLabel: "#7f919f",
+    cardBg:
+      "linear-gradient(180deg, rgba(25,32,40,0.96) 0%, rgba(18,24,31,0.94) 100%)",
+    cardBorder: "rgba(106,139,173,0.12)",
+    cardTitle: "#dce7f2",
+    cardText: "#c3d0dc",
+    chipBg: "rgba(255,255,255,0.04)",
+    chipBorder: "rgba(255,255,255,0.06)",
+    chipText: "#98a9ba",
+    inputBg: "#0a0f14",
+    inputText: "#eef5fb",
+    inputBorder: "rgba(106,139,173,0.12)",
+    kpiBg: "rgba(255,255,255,0.04)",
+    kpiBorder: "rgba(255,255,255,0.06)",
+    rowBg: "rgba(255,255,255,0.04)",
+    rowBorder: "rgba(255,255,255,0.05)",
+    buttonBg: "linear-gradient(180deg, #52b7c7 0%, #2d7481 100%)",
+    buttonShadow: "0 8px 20px rgba(45, 116, 129, 0.20)",
+    buttonSecondaryBg: "rgba(255,255,255,0.04)",
+    buttonSecondaryText: "#dce7f2",
+    buttonSecondaryBorder: "rgba(255,255,255,0.06)",
+  },
+
+  household_warm: {
+    label: "Household Warm",
+    pageBg:
+      "radial-gradient(circle at top left, rgba(255,209,168,0.18), transparent 24%), radial-gradient(circle at bottom right, rgba(155,219,201,0.16), transparent 22%), linear-gradient(180deg, #f2e2d2 0%, #efe6dd 52%, #dfe9e4 100%)",
+    shellBg:
+      "linear-gradient(180deg, rgba(88,68,58,0.92) 0%, rgba(70,56,49,0.95) 100%)",
+    shellBorder: "rgba(255,255,255,0.10)",
+    shellShadow:
+      "0 24px 80px rgba(72,50,39,0.26), inset 0 1px 0 rgba(255,255,255,0.05)",
+    title: "#f7efe7",
+    subtitle: "#dccfc4",
+    machineLabel: "#cebeb0",
+    cardBg:
+      "linear-gradient(180deg, rgba(253,248,242,0.96) 0%, rgba(243,235,227,0.94) 100%)",
+    cardBorder: "rgba(255,255,255,0.62)",
+    cardTitle: "#5d473c",
+    cardText: "#5d4d44",
+    chipBg: "rgba(93,71,60,0.06)",
+    chipBorder: "rgba(93,71,60,0.10)",
+    chipText: "#7f6659",
+    inputBg: "#4a3932",
+    inputText: "#f8f0e7",
+    inputBorder: "rgba(93,71,60,0.20)",
+    kpiBg: "rgba(255,255,255,0.46)",
+    kpiBorder: "rgba(93,71,60,0.08)",
+    rowBg: "rgba(255,255,255,0.42)",
+    rowBorder: "rgba(93,71,60,0.08)",
+    buttonBg: "linear-gradient(180deg, #d89963 0%, #b2714d 100%)",
+    buttonShadow: "0 8px 20px rgba(178, 113, 77, 0.20)",
+    buttonSecondaryBg: "rgba(93,71,60,0.08)",
+    buttonSecondaryText: "#5d4d44",
+    buttonSecondaryBorder: "rgba(93,71,60,0.12)",
+  },
 };
 
 // ==============================
 // FUNÇÕES AUXILIARES DE LEITURA
 // ==============================
 
-// Lê texto simples do localStorage
 function lerTextoStorage(chave) {
   if (typeof window === "undefined") {
     return "";
@@ -31,7 +207,6 @@ function lerTextoStorage(chave) {
   return valorSalvo ?? "";
 }
 
-// Lê JSON do localStorage com fallback seguro
 function lerJsonStorage(chave, valorPadrao) {
   if (typeof window === "undefined") {
     return valorPadrao;
@@ -52,36 +227,41 @@ function lerJsonStorage(chave, valorPadrao) {
 
 export default function App() {
   // ==============================
+  // STATES DE PERFIL / VISÃO
+  // ==============================
+
+  // "household" = visão combinada da casa
+  // qualquer outro valor = id da pessoa ativa
+  const [perfilAtivo, setPerfilAtivo] = useState(
+    () => lerTextoStorage(STORAGE_KEYS.perfilAtivo) || "household"
+  );
+
+  // Tema da visão Household
+  const [temaHousehold, setTemaHousehold] = useState(
+    () => lerTextoStorage(STORAGE_KEYS.temaHousehold) || "cassette_neon"
+  );
+
+  // ==============================
   // STATES DE PESSOAS
   // ==============================
 
-  // Lista de pessoas cadastradas
   const [pessoas, setPessoas] = useState(() =>
     lerJsonStorage(STORAGE_KEYS.pessoas, [])
   );
 
-  // Nome digitado no formulário de pessoa
   const [nomePessoa, setNomePessoa] = useState("");
-
-  // Salário digitado no formulário de pessoa
   const [salarioPessoa, setSalarioPessoa] = useState("");
-
-  // Guarda qual pessoa está sendo editada
   const [pessoaEmEdicaoId, setPessoaEmEdicaoId] = useState(null);
-
-  // Mensagem de erro ao salvar pessoa
   const [erroPessoa, setErroPessoa] = useState("");
 
   // ==============================
   // STATES PRINCIPAIS
   // ==============================
 
-  // Total acumulado de gastos em débito
   const [gastoDebito, setGastoDebito] = useState(() =>
     lerTextoStorage(STORAGE_KEYS.gastoDebito)
   );
 
-  // Total acumulado da fatura atual de crédito
   const [faturaAtual, setFaturaAtual] = useState(() =>
     lerTextoStorage(STORAGE_KEYS.faturaAtual)
   );
@@ -90,52 +270,33 @@ export default function App() {
   // STATES DE CARTÕES
   // ==============================
 
-  // Lista de cartões cadastrados
   const [cartoes, setCartoes] = useState(() =>
     lerJsonStorage(STORAGE_KEYS.cartoes, [])
   );
 
-  // Nome do cartão digitado no formulário
   const [nomeCartao, setNomeCartao] = useState("");
-
-  // Tipo do cartão selecionado
   const [tipoCartao, setTipoCartao] = useState("credito");
-
-  // Mensagem de erro ao cadastrar cartão
   const [erroCartao, setErroCartao] = useState("");
 
   // ==============================
   // STATES DE GASTOS
   // ==============================
 
-  // Lista de gastos cadastrados
   const [gastos, setGastos] = useState(() =>
     lerJsonStorage(STORAGE_KEYS.gastos, [])
   );
 
-  // Nome do gasto
   const [nomeGasto, setNomeGasto] = useState("");
-
-  // Valor do gasto
   const [valorGasto, setValorGasto] = useState("");
-
-  // Cartão selecionado para o gasto
   const [cartaoSelecionado, setCartaoSelecionado] = useState("");
-
-  // Pessoa selecionada para o gasto
   const [pessoaSelecionada, setPessoaSelecionada] = useState("");
-
-  // Guarda qual gasto está sendo editado
   const [gastoEmEdicaoId, setGastoEmEdicaoId] = useState(null);
-
-  // Mensagem de erro ao cadastrar gasto
   const [erroGasto, setErroGasto] = useState("");
 
   // ==============================
   // EFEITOS DE PERSISTÊNCIA
   // ==============================
 
-  // Salva pessoas sempre que a lista mudar
   useEffect(() => {
     window.localStorage.setItem(
       STORAGE_KEYS.pessoas,
@@ -143,7 +304,6 @@ export default function App() {
     );
   }, [pessoas]);
 
-  // Salva total de débito sempre que ele mudar
   useEffect(() => {
     window.localStorage.setItem(
       STORAGE_KEYS.gastoDebito,
@@ -151,7 +311,6 @@ export default function App() {
     );
   }, [gastoDebito]);
 
-  // Salva total da fatura sempre que ela mudar
   useEffect(() => {
     window.localStorage.setItem(
       STORAGE_KEYS.faturaAtual,
@@ -159,7 +318,6 @@ export default function App() {
     );
   }, [faturaAtual]);
 
-  // Salva lista de cartões sempre que ela mudar
   useEffect(() => {
     window.localStorage.setItem(
       STORAGE_KEYS.cartoes,
@@ -167,13 +325,26 @@ export default function App() {
     );
   }, [cartoes]);
 
-  // Salva lista de gastos sempre que ela mudar
   useEffect(() => {
     window.localStorage.setItem(
       STORAGE_KEYS.gastos,
       JSON.stringify(gastos)
     );
   }, [gastos]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      STORAGE_KEYS.perfilAtivo,
+      String(perfilAtivo)
+    );
+  }, [perfilAtivo]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      STORAGE_KEYS.temaHousehold,
+      temaHousehold
+    );
+  }, [temaHousehold]);
 
   // ==============================
   // FUNÇÕES DE PESSOAS
@@ -222,6 +393,7 @@ export default function App() {
       id: Date.now(),
       nome: nomeNormalizado,
       salario: salarioConvertido,
+      tema: "cassette_neon",
     };
 
     setPessoas([...pessoas, novaPessoa]);
@@ -236,17 +408,16 @@ export default function App() {
   }
 
   function excluirPessoa(idPessoa) {
-    // Remove a pessoa da lista
     setPessoas((pessoasAnteriores) =>
       pessoasAnteriores.filter((pessoa) => pessoa.id !== idPessoa)
     );
 
-    // Remove gastos ligados à pessoa excluída
-    const gastosRestantes = gastos.filter((gasto) => gasto.pessoaId !== idPessoa);
+    const gastosRestantes = gastos.filter(
+      (gasto) => gasto.pessoaId !== idPessoa
+    );
 
     setGastos(gastosRestantes);
 
-    // Recalcula totais com base nos gastos restantes
     const novoTotalDebito = gastosRestantes
       .filter((gasto) => gasto.tipo === "debito")
       .reduce((acumulador, gasto) => acumulador + paraNumero(gasto.valor), 0);
@@ -258,15 +429,30 @@ export default function App() {
     setGastoDebito(novoTotalDebito);
     setFaturaAtual(novoTotalCredito);
 
-    // Se a pessoa excluída estiver selecionada no formulário de gasto, limpa
     if (Number(pessoaSelecionada) === idPessoa) {
       setPessoaSelecionada("");
     }
 
-    // Se a pessoa excluída estiver em edição, limpa o formulário
     if (pessoaEmEdicaoId === idPessoa) {
       limparFormularioPessoa();
     }
+
+    if (String(perfilAtivo) === String(idPessoa)) {
+      setPerfilAtivo("household");
+    }
+  }
+
+  function alterarTemaDaPessoa(idPessoa, novoTema) {
+    setPessoas((pessoasAnteriores) =>
+      pessoasAnteriores.map((pessoa) =>
+        pessoa.id === idPessoa
+          ? {
+              ...pessoa,
+              tema: novoTema,
+            }
+          : pessoa
+      )
+    );
   }
 
   // ==============================
@@ -274,17 +460,13 @@ export default function App() {
   // ==============================
 
   function adicionarCartao() {
-    // Normaliza o nome para evitar duplicidade por caixa alta/baixa
     const nomeNormalizado = nomeCartao.trim().toLowerCase();
 
-    // Validação: nome obrigatório
     if (!nomeNormalizado) {
       setErroCartao("Digite um nome para o cartão.");
       return;
     }
 
-    // Regra de negócio:
-    // mesmo nome + mesmo tipo = proibido
     const duplicado = cartoes.some(
       (cartaoExistente) =>
         cartaoExistente.nome.toLowerCase() === nomeNormalizado &&
@@ -296,17 +478,13 @@ export default function App() {
       return;
     }
 
-    // Cria o novo cartão
     const novoCartao = {
       id: Date.now(),
       nome: nomeCartao.trim(),
       tipo: tipoCartao,
     };
 
-    // Salva o cartão na lista
     setCartoes([...cartoes, novoCartao]);
-
-    // Limpa formulário e erro
     setNomeCartao("");
     setErroCartao("");
   }
@@ -340,56 +518,46 @@ export default function App() {
   function adicionarGasto() {
     const nomeNormalizado = nomeGasto.trim();
 
-    // Validação: nome obrigatório
     if (!nomeNormalizado) {
       setErroGasto("Digite um nome para o gasto.");
       return;
     }
 
-    // Validação: valor obrigatório
     if (!valorGasto) {
       setErroGasto("Digite um valor para o gasto.");
       return;
     }
 
-    // Validação: cartão obrigatório
     if (!cartaoSelecionado) {
       setErroGasto("Selecione um cartão.");
       return;
     }
 
-    // Validação: pessoa obrigatória
     if (!pessoaSelecionada) {
       setErroGasto("Selecione a pessoa responsável pelo gasto.");
       return;
     }
 
-    // Busca o cartão selecionado
     const cartao = cartoes.find(
       (cartaoExistente) => cartaoExistente.id === Number(cartaoSelecionado)
     );
 
-    // Segurança extra
     if (!cartao) {
       setErroGasto("Cartão inválido.");
       return;
     }
 
-    // Busca a pessoa selecionada
     const pessoa = pessoas.find(
       (pessoaExistente) => pessoaExistente.id === Number(pessoaSelecionada)
     );
 
-    // Segurança extra
     if (!pessoa) {
       setErroGasto("Pessoa inválida.");
       return;
     }
 
-    // Converte o valor para número seguro
     const valor = paraNumero(valorGasto);
 
-    // Se estiver editando, atualiza o gasto existente
     if (gastoEmEdicaoId) {
       const gastosAtualizados = gastos.map((gasto) =>
         gasto.id === gastoEmEdicaoId
@@ -411,7 +579,6 @@ export default function App() {
       return;
     }
 
-    // Cria o gasto
     const novoGasto = {
       id: Date.now(),
       nome: nomeNormalizado,
@@ -423,18 +590,14 @@ export default function App() {
     };
 
     const novaLista = [...gastos, novoGasto];
-
-    // Salva na lista
     setGastos(novaLista);
 
-    // Atualiza os totais automáticos
     if (cartao.tipo === "debito") {
       setGastoDebito((valorAnterior) => paraNumero(valorAnterior) + valor);
     } else {
       setFaturaAtual((valorAnterior) => paraNumero(valorAnterior) + valor);
     }
 
-    // Limpa formulário e erro
     limparFormularioGasto();
   }
 
@@ -445,7 +608,9 @@ export default function App() {
 
     setNomeGasto(gasto.nome);
     setValorGasto(String(gasto.valor));
-    setCartaoSelecionado(cartaoCorrespondente ? String(cartaoCorrespondente.id) : "");
+    setCartaoSelecionado(
+      cartaoCorrespondente ? String(cartaoCorrespondente.id) : ""
+    );
     setPessoaSelecionada(String(gasto.pessoaId));
     setGastoEmEdicaoId(gasto.id);
     setErroGasto("");
@@ -462,42 +627,466 @@ export default function App() {
   }
 
   // ==============================
-  // CÁLCULOS
+  // CÁLCULOS DE PERFIL ATIVO
   // ==============================
 
-  // Soma dos salários de todas as pessoas cadastradas
-  const salarioTotal = useMemo(() => {
-    return pessoas.reduce(
-      (acumulador, pessoa) => acumulador + paraNumero(pessoa.salario),
-      0
-    );
-  }, [pessoas]);
+  const ehHousehold = perfilAtivo === "household";
 
-  // Calcula o saldo disponível
+  const pessoaAtiva = useMemo(() => {
+    if (ehHousehold) {
+      return null;
+    }
+
+    return (
+      pessoas.find((pessoa) => String(pessoa.id) === String(perfilAtivo)) ?? null
+    );
+  }, [ehHousehold, perfilAtivo, pessoas]);
+
+  const temaAtivo = useMemo(() => {
+    if (ehHousehold) {
+      return THEMES[temaHousehold] ?? THEMES.cassette_neon;
+    }
+
+    const chaveTemaPessoa = pessoaAtiva?.tema ?? "cassette_neon";
+    return THEMES[chaveTemaPessoa] ?? THEMES.cassette_neon;
+  }, [ehHousehold, temaHousehold, pessoaAtiva]);
+
+  const gastosFiltrados = useMemo(() => {
+    if (ehHousehold) {
+      return gastos;
+    }
+
+    return gastos.filter(
+      (gasto) => String(gasto.pessoaId) === String(perfilAtivo)
+    );
+  }, [ehHousehold, gastos, perfilAtivo]);
+
+  const gastoDebitoFiltrado = useMemo(() => {
+    return gastosFiltrados
+      .filter((gasto) => gasto.tipo === "debito")
+      .reduce((acumulador, gasto) => acumulador + paraNumero(gasto.valor), 0);
+  }, [gastosFiltrados]);
+
+  const faturaAtualFiltrada = useMemo(() => {
+    return gastosFiltrados
+      .filter((gasto) => gasto.tipo === "credito")
+      .reduce((acumulador, gasto) => acumulador + paraNumero(gasto.valor), 0);
+  }, [gastosFiltrados]);
+
+  const salarioTotalFiltrado = useMemo(() => {
+    if (ehHousehold) {
+      return pessoas.reduce(
+        (acumulador, pessoa) => acumulador + paraNumero(pessoa.salario),
+        0
+      );
+    }
+
+    return pessoaAtiva ? paraNumero(pessoaAtiva.salario) : 0;
+  }, [ehHousehold, pessoaAtiva, pessoas]);
+
   const saldoDisponivel = calcularSaldoDisponivel(
-    paraNumero(salarioTotal),
-    paraNumero(gastoDebito),
-    paraNumero(faturaAtual)
+    paraNumero(salarioTotalFiltrado),
+    paraNumero(gastoDebitoFiltrado),
+    paraNumero(faturaAtualFiltrada)
   );
 
-  // Dados do gráfico
   const dataGrafico = [
-    { name: "Débito", value: paraNumero(gastoDebito) || 0 },
-    { name: "Crédito", value: paraNumero(faturaAtual) || 0 },
+    { name: "Débito", value: paraNumero(gastoDebitoFiltrado) || 0 },
+    { name: "Crédito", value: paraNumero(faturaAtualFiltrada) || 0 },
   ];
 
-  // Cores do gráfico alinhadas com o restante da interface
   const COLORS = ["#ff6b7a", "#ffb84d"];
+  const mostrarGrafico = gastosFiltrados.length > 0;
 
-  // Só mostra gráfico quando existir ao menos 1 gasto
-  const mostrarGrafico = gastos.length > 0;
+  const nomeVisaoAtiva = ehHousehold
+    ? "Household"
+    : pessoaAtiva?.nome || "Perfil";
 
-  // ==============================
-  // RENDER
-  // ==============================
+  function alterarTemaAtivo(novoTema) {
+    if (ehHousehold) {
+      setTemaHousehold(novoTema);
+      return;
+    }
 
-  return (
-    <div style={styles.container}>
+    if (pessoaAtiva) {
+      alterarTemaDaPessoa(pessoaAtiva.id, novoTema);
+    }
+  }
+
+  const valorTemaSelecionado = ehHousehold
+    ? temaHousehold
+    : pessoaAtiva?.tema || "cassette_neon";
+
+  const styles = useMemo(
+    () => ({
+      container: {
+        width: "100%",
+        minHeight: "100vh",
+        padding: "28px",
+        boxSizing: "border-box",
+        overflowX: "hidden",
+        background: temaAtivo.pageBg,
+      },
+
+      shell: {
+        maxWidth: "1480px",
+        margin: "0 auto",
+        padding: "18px",
+        borderRadius: "28px",
+        background: temaAtivo.shellBg,
+        border: `1px solid ${temaAtivo.shellBorder}`,
+        boxShadow: temaAtivo.shellShadow,
+      },
+
+      machineBar: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: "18px",
+        paddingBottom: "12px",
+        borderBottom: `1px solid ${temaAtivo.shellBorder}`,
+      },
+
+      machineLights: {
+        display: "flex",
+        gap: "8px",
+      },
+
+      machineDot: {
+        width: "10px",
+        height: "10px",
+        borderRadius: "999px",
+        boxShadow: "0 0 10px currentColor",
+        display: "inline-block",
+      },
+
+      machineLabel: {
+        color: temaAtivo.machineLabel,
+        fontSize: "12px",
+        letterSpacing: "1.4px",
+        fontWeight: "700",
+      },
+
+      header: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "flex-end",
+        gap: "24px",
+        flexWrap: "wrap",
+        marginBottom: "24px",
+      },
+
+      title: {
+        margin: 0,
+        color: temaAtivo.title,
+        fontSize: "56px",
+        lineHeight: "1",
+        fontWeight: "700",
+        letterSpacing: "-1.8px",
+      },
+
+      subtitle: {
+        marginTop: "10px",
+        marginBottom: 0,
+        color: temaAtivo.subtitle,
+        maxWidth: "720px",
+        fontSize: "15px",
+      },
+
+      legenda: {
+        display: "flex",
+        gap: "10px",
+        flexWrap: "wrap",
+      },
+
+      badge: {
+        color: "#ffffff",
+        padding: "9px 14px",
+        borderRadius: "999px",
+        fontSize: "12px",
+        fontWeight: "700",
+        whiteSpace: "nowrap",
+        boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
+      },
+
+      badgeMini: {
+        color: "#ffffff",
+        padding: "6px 10px",
+        borderRadius: "999px",
+        fontSize: "11px",
+        fontWeight: "700",
+        marginLeft: "10px",
+        whiteSpace: "nowrap",
+        boxShadow: "0 4px 10px rgba(0,0,0,0.12)",
+      },
+
+      badgeDebito: {
+        background: "linear-gradient(180deg, #ff7b89 0%, #e85d75 100%)",
+      },
+
+      badgeCredito: {
+        background: "linear-gradient(180deg, #ffc66e 0%, #e9a03b 100%)",
+      },
+
+      badgeSaldo: {
+        background: "linear-gradient(180deg, #4edbb0 0%, #2d9d8f 100%)",
+      },
+
+      topGrid: {
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+        gap: "18px",
+        alignItems: "start",
+        marginBottom: "18px",
+      },
+
+      bottomGrid: {
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
+        gap: "18px",
+        alignItems: "start",
+        marginBottom: "18px",
+      },
+
+      card: {
+        background: temaAtivo.cardBg,
+        border: `1px solid ${temaAtivo.cardBorder}`,
+        borderRadius: "22px",
+        padding: "18px",
+        color: temaAtivo.cardText,
+        boxShadow:
+          "0 12px 28px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
+        height: "fit-content",
+      },
+
+      cardGrafico: {
+        textAlign: "center",
+      },
+
+      cardHeader: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: "12px",
+        marginBottom: "14px",
+      },
+
+      cardTitle: {
+        margin: 0,
+        color: temaAtivo.cardTitle,
+        fontSize: "28px",
+        fontWeight: "700",
+        letterSpacing: "-0.4px",
+      },
+
+      cardChip: {
+        fontSize: "11px",
+        fontWeight: "700",
+        letterSpacing: "0.8px",
+        textTransform: "uppercase",
+        color: temaAtivo.chipText,
+        background: temaAtivo.chipBg,
+        border: `1px solid ${temaAtivo.chipBorder}`,
+        padding: "6px 10px",
+        borderRadius: "999px",
+        whiteSpace: "nowrap",
+      },
+
+      label: {
+        color: temaAtivo.cardText,
+        fontWeight: "700",
+        display: "block",
+        marginBottom: "6px",
+        fontSize: "14px",
+      },
+
+      kpiStack: {
+        display: "grid",
+        gap: "12px",
+      },
+
+      kpiRow: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: "12px",
+        padding: "12px 14px",
+        borderRadius: "16px",
+        background: temaAtivo.kpiBg,
+        border: `1px solid ${temaAtivo.kpiBorder}`,
+      },
+
+      kpiLabel: {
+        color: temaAtivo.cardText,
+        fontSize: "14px",
+        fontWeight: "600",
+      },
+
+      kpiValue: {
+        fontSize: "22px",
+        fontWeight: "700",
+      },
+
+      resumoSaldo: {
+        color: "#2d9d8f",
+      },
+
+      resumoDebito: {
+        color: "#e85d75",
+      },
+
+      resumoCredito: {
+        color: "#d68a1f",
+      },
+
+      textoAuxiliar: {
+        fontSize: "14px",
+        color: temaAtivo.subtitle,
+        lineHeight: "1.5",
+        margin: 0,
+        maxWidth: "260px",
+      },
+
+      placeholderGrafico: {
+        minHeight: "240px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "14px",
+      },
+
+      graficoWrapper: {
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "240px",
+        overflow: "hidden",
+      },
+
+      input: {
+        width: "100%",
+        padding: "13px 14px",
+        margin: "10px 0",
+        borderRadius: "14px",
+        border: `1px solid ${temaAtivo.inputBorder}`,
+        boxSizing: "border-box",
+        background: temaAtivo.inputBg,
+        color: temaAtivo.inputText,
+        outline: "none",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
+      },
+
+      button: {
+        width: "100%",
+        padding: "13px",
+        background: temaAtivo.buttonBg,
+        color: "#ffffff",
+        border: "none",
+        borderRadius: "14px",
+        cursor: "pointer",
+        fontWeight: "700",
+        marginTop: "4px",
+        boxShadow: temaAtivo.buttonShadow,
+      },
+
+      buttonSecundario: {
+        width: "100%",
+        padding: "13px",
+        background: temaAtivo.buttonSecondaryBg,
+        color: temaAtivo.buttonSecondaryText,
+        border: `1px solid ${temaAtivo.buttonSecondaryBorder}`,
+        borderRadius: "14px",
+        cursor: "pointer",
+        fontWeight: "700",
+        marginTop: "8px",
+      },
+
+      erro: {
+        color: "#c1121f",
+        fontWeight: "700",
+        marginTop: "12px",
+        marginBottom: 0,
+      },
+
+      lista: {
+        paddingLeft: "20px",
+        marginTop: "18px",
+        marginBottom: 0,
+      },
+
+      itemLista: {
+        marginBottom: "12px",
+        color: temaAtivo.cardText,
+        lineHeight: "1.45",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "10px",
+        padding: "10px 12px",
+        borderRadius: "14px",
+        background: temaAtivo.rowBg,
+        border: `1px solid ${temaAtivo.rowBorder}`,
+      },
+
+      itemListaColuna: {
+        marginBottom: "12px",
+        color: temaAtivo.cardText,
+        lineHeight: "1.45",
+        display: "flex",
+        flexDirection: "column",
+        gap: "10px",
+        padding: "10px 12px",
+        borderRadius: "14px",
+        background: temaAtivo.rowBg,
+        border: `1px solid ${temaAtivo.rowBorder}`,
+        listStyle: "none",
+      },
+
+      itemLinhaSuperior: {
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "10px",
+      },
+
+      itemText: {
+        flex: 1,
+        minWidth: 0,
+      },
+
+      actionRow: {
+        width: "100%",
+        display: "flex",
+        gap: "8px",
+      },
+
+      actionButton: {
+        flex: 1,
+        padding: "9px 12px",
+        background: "rgba(72,185,255,0.12)",
+        color: "#204761",
+        border: "1px solid rgba(72,185,255,0.16)",
+        borderRadius: "10px",
+        cursor: "pointer",
+        fontWeight: "700",
+      },
+
+      actionButtonDanger: {
+        flex: 1,
+        padding: "9px 12px",
+        background: "rgba(232,93,117,0.12)",
+        color: "#8a2334",
+        border: "1px solid rgba(232,93,117,0.16)",
+        borderRadius: "10px",
+        cursor: "pointer",
+        fontWeight: "700",
+      },
+    }),
+    [temaAtivo]
+  );
+
+  return (    <div style={styles.container}>
       <div style={styles.shell}>
         {/* BARRA SUPERIOR / IDENTIDADE VISUAL */}
         <div style={styles.machineBar}>
@@ -535,117 +1124,80 @@ export default function App() {
           </div>
         </div>
 
-        {/* LINHA SUPERIOR */}
+        {/* LINHA 1: PERFIL ATIVO + LEITURA + GRÁFICO */}
         <div style={styles.topGrid}>
-          {/* CARD: PESSOAS */}
           <div style={styles.card}>
             <div style={styles.cardHeader}>
-              <h2 style={styles.cardTitle}>Pessoas</h2>
-              <span style={styles.cardChip}>Rendas</span>
+              <h2 style={styles.cardTitle}>Visão ativa</h2>
+              <span style={styles.cardChip}>Perfil</span>
             </div>
 
-            <label style={styles.label}>Nome da pessoa</label>
-            <input
-              type="text"
-              value={nomePessoa}
-              onChange={(e) => setNomePessoa(e.target.value)}
+            <label style={styles.label}>Selecionar perfil</label>
+            <select
+              value={perfilAtivo}
+              onChange={(e) => setPerfilAtivo(e.target.value)}
               style={styles.input}
-              placeholder="Ex.: Daniel"
-            />
-
-            <label style={styles.label}>Salário da pessoa</label>
-            <input
-              type="number"
-              value={salarioPessoa}
-              onChange={(e) => setSalarioPessoa(e.target.value)}
-              style={styles.input}
-              placeholder="Ex.: 3500"
-            />
-
-            <button onClick={salvarPessoa} style={styles.button}>
-              {pessoaEmEdicaoId ? "Salvar pessoa" : "Adicionar pessoa"}
-            </button>
-
-            {pessoaEmEdicaoId && (
-              <button onClick={limparFormularioPessoa} style={styles.buttonSecundario}>
-                Cancelar edição
-              </button>
-            )}
-
-            {erroPessoa && <p style={styles.erro}>{erroPessoa}</p>}
-
-            <ul style={styles.lista}>
+            >
+              <option value="household">Household (visão conjunta)</option>
               {pessoas.map((pessoa) => (
-                <li key={pessoa.id} style={styles.itemListaColuna}>
-                  <div style={styles.itemLinhaSuperior}>
-                    <span style={styles.itemText}>
-                      {pessoa.nome} · R$ {pessoa.salario}
-                    </span>
-
-                    <span style={{ ...styles.badgeMini, ...styles.badgeSaldo }}>
-                      renda
-                    </span>
-                  </div>
-
-                  <div style={styles.actionRow}>
-                    <button
-                      onClick={() => editarPessoa(pessoa)}
-                      style={styles.actionButton}
-                    >
-                      Editar
-                    </button>
-
-                    <button
-                      onClick={() => excluirPessoa(pessoa.id)}
-                      style={styles.actionButtonDanger}
-                    >
-                      Excluir
-                    </button>
-                  </div>
-                </li>
+                <option key={pessoa.id} value={String(pessoa.id)}>
+                  {pessoa.nome}
+                </option>
               ))}
-            </ul>
+            </select>
+
+            <label style={styles.label}>Tema do dashboard</label>
+            <select
+              value={valorTemaSelecionado}
+              onChange={(e) => alterarTemaAtivo(e.target.value)}
+              style={styles.input}
+            >
+              {Object.entries(THEMES).map(([chave, tema]) => (
+                <option key={chave} value={chave}>
+                  {tema.label}
+                </option>
+              ))}
+            </select>
+
+            <div style={styles.kpiStack}>
+              <div style={styles.kpiRow}>
+                <span style={styles.kpiLabel}>Modo atual</span>
+                <span style={{ ...styles.kpiValue, ...styles.resumoSaldo }}>
+                  {nomeVisaoAtiva}
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* CARD: RESUMO */}
           <div style={styles.card}>
             <div style={styles.cardHeader}>
-              <h2 style={styles.cardTitle}>Resumo</h2>
-              <span style={styles.cardChip}>Leitura</span>
+              <h2 style={styles.cardTitle}>Leitura da visão</h2>
+              <span style={styles.cardChip}>Filtro</span>
             </div>
 
             <div style={styles.kpiStack}>
               <div style={styles.kpiRow}>
-                <span style={styles.kpiLabel}>Salário total</span>
+                <span style={styles.kpiLabel}>Salário considerado</span>
                 <span style={{ ...styles.kpiValue, ...styles.resumoSaldo }}>
-                  R$ {salarioTotal}
+                  R$ {salarioTotalFiltrado}
                 </span>
               </div>
 
               <div style={styles.kpiRow}>
-                <span style={styles.kpiLabel}>Saldo disponível</span>
-                <span style={{ ...styles.kpiValue, ...styles.resumoSaldo }}>
-                  R$ {saldoDisponivel}
-                </span>
-              </div>
-
-              <div style={styles.kpiRow}>
-                <span style={styles.kpiLabel}>Saída imediata</span>
+                <span style={styles.kpiLabel}>Gastos visíveis</span>
                 <span style={{ ...styles.kpiValue, ...styles.resumoDebito }}>
-                  R$ {gastoDebito}
-                </span>
-              </div>
-
-              <div style={styles.kpiRow}>
-                <span style={styles.kpiLabel}>Fatura acumulada</span>
-                <span style={{ ...styles.kpiValue, ...styles.resumoCredito }}>
-                  R$ {faturaAtual}
+                  {gastosFiltrados.length}
                 </span>
               </div>
             </div>
+
+            <p style={{ ...styles.textoAuxiliar, marginTop: "14px" }}>
+              Em <strong>Household</strong>, o painel mostra tudo junto. Em um
+              perfil individual, o painel filtra salário, gráfico e gastos
+              daquela pessoa.
+            </p>
           </div>
 
-          {/* CARD: GRÁFICO */}
           <div style={{ ...styles.card, ...styles.cardGrafico }}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Distribuição</h2>
@@ -655,8 +1207,8 @@ export default function App() {
             {!mostrarGrafico ? (
               <div style={styles.placeholderGrafico}>
                 <p style={styles.textoAuxiliar}>
-                  O gráfico aparecerá depois que você cadastrar ao menos um
-                  gasto.
+                  O gráfico aparecerá depois que houver ao menos um gasto na
+                  visão atual.
                 </p>
               </div>
             ) : (
@@ -692,9 +1244,136 @@ export default function App() {
           </div>
         </div>
 
+        {/* LINHA 2: PESSOAS + RESUMO */}
+        <div style={styles.topGrid}>
+          <div style={styles.card}>
+            <div style={styles.cardHeader}>
+              <h2 style={styles.cardTitle}>Pessoas</h2>
+              <span style={styles.cardChip}>Rendas</span>
+            </div>
+
+            <label style={styles.label}>Nome da pessoa</label>
+            <input
+              type="text"
+              value={nomePessoa}
+              onChange={(e) => setNomePessoa(e.target.value)}
+              style={styles.input}
+              placeholder="Ex.: Daniel"
+            />
+
+            <label style={styles.label}>Salário da pessoa</label>
+            <input
+              type="number"
+              value={salarioPessoa}
+              onChange={(e) => setSalarioPessoa(e.target.value)}
+              style={styles.input}
+              placeholder="Ex.: 3500"
+            />
+
+            <button onClick={salvarPessoa} style={styles.button}>
+              {pessoaEmEdicaoId ? "Salvar pessoa" : "Adicionar pessoa"}
+            </button>
+
+            {pessoaEmEdicaoId && (
+              <button
+                onClick={limparFormularioPessoa}
+                style={styles.buttonSecundario}
+              >
+                Cancelar edição
+              </button>
+            )}
+
+            {erroPessoa && <p style={styles.erro}>{erroPessoa}</p>}
+
+            <ul style={styles.lista}>
+              {pessoas.map((pessoa) => (
+                <li key={pessoa.id} style={styles.itemListaColuna}>
+                  <div style={styles.itemLinhaSuperior}>
+                    <span style={styles.itemText}>
+                      {pessoa.nome} · R$ {pessoa.salario}
+                    </span>
+
+                    <span style={{ ...styles.badgeMini, ...styles.badgeSaldo }}>
+                      renda
+                    </span>
+                  </div>
+
+                  <select
+                    value={pessoa.tema || "cassette_neon"}
+                    onChange={(e) =>
+                      alterarTemaDaPessoa(pessoa.id, e.target.value)
+                    }
+                    style={styles.input}
+                  >
+                    {Object.entries(THEMES).map(([chave, tema]) => (
+                      <option key={chave} value={chave}>
+                        {tema.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <div style={styles.actionRow}>
+                    <button
+                      onClick={() => editarPessoa(pessoa)}
+                      style={styles.actionButton}
+                    >
+                      Editar
+                    </button>
+
+                    <button
+                      onClick={() => excluirPessoa(pessoa.id)}
+                      style={styles.actionButtonDanger}
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div style={styles.card}>
+            <div style={styles.cardHeader}>
+              <h2 style={styles.cardTitle}>Resumo</h2>
+              <span style={styles.cardChip}>Leitura</span>
+            </div>
+
+            <div style={styles.kpiStack}>
+              <div style={styles.kpiRow}>
+                <span style={styles.kpiLabel}>
+                  {ehHousehold ? "Salário total" : "Salário do perfil"}
+                </span>
+                <span style={{ ...styles.kpiValue, ...styles.resumoSaldo }}>
+                  R$ {salarioTotalFiltrado}
+                </span>
+              </div>
+
+              <div style={styles.kpiRow}>
+                <span style={styles.kpiLabel}>Saldo disponível</span>
+                <span style={{ ...styles.kpiValue, ...styles.resumoSaldo }}>
+                  R$ {saldoDisponivel}
+                </span>
+              </div>
+
+              <div style={styles.kpiRow}>
+                <span style={styles.kpiLabel}>Saída imediata</span>
+                <span style={{ ...styles.kpiValue, ...styles.resumoDebito }}>
+                  R$ {gastoDebitoFiltrado}
+                </span>
+              </div>
+
+              <div style={styles.kpiRow}>
+                <span style={styles.kpiLabel}>Fatura acumulada</span>
+                <span style={{ ...styles.kpiValue, ...styles.resumoCredito }}>
+                  R$ {faturaAtualFiltrada}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* LINHA INFERIOR */}
         <div style={styles.bottomGrid}>
-          {/* CARD: CARTÕES */}
           <div style={styles.card}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Cartões</h2>
@@ -743,7 +1422,6 @@ export default function App() {
             </ul>
           </div>
 
-          {/* CARD: GASTOS */}
           <div style={styles.card}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Gastos</h2>
@@ -797,7 +1475,10 @@ export default function App() {
             </button>
 
             {gastoEmEdicaoId && (
-              <button onClick={limparFormularioGasto} style={styles.buttonSecundario}>
+              <button
+                onClick={limparFormularioGasto}
+                style={styles.buttonSecundario}
+              >
                 Cancelar edição
               </button>
             )}
@@ -805,7 +1486,7 @@ export default function App() {
             {erroGasto && <p style={styles.erro}>{erroGasto}</p>}
 
             <ul style={styles.lista}>
-              {gastos.map((gasto) => (
+              {gastosFiltrados.map((gasto) => (
                 <li key={gasto.id} style={styles.itemListaColuna}>
                   <div style={styles.itemLinhaSuperior}>
                     <span style={styles.itemText}>
@@ -849,373 +1530,3 @@ export default function App() {
     </div>
   );
 }
-
-// ==============================
-// ESTILOS
-// ==============================
-const styles = {
-  container: {
-    width: "100%",
-    minHeight: "100vh",
-    padding: "28px",
-    boxSizing: "border-box",
-    overflowX: "hidden",
-  },
-
-  shell: {
-    maxWidth: "1480px",
-    margin: "0 auto",
-    padding: "18px",
-    borderRadius: "28px",
-    background:
-      "linear-gradient(180deg, rgba(18,24,32,0.94) 0%, rgba(12,17,24,0.96) 100%)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    boxShadow:
-      "0 24px 80px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)",
-  },
-
-  machineBar: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "18px",
-    paddingBottom: "12px",
-    borderBottom: "1px solid rgba(255,255,255,0.07)",
-  },
-
-  machineLights: {
-    display: "flex",
-    gap: "8px",
-  },
-
-  machineDot: {
-    width: "10px",
-    height: "10px",
-    borderRadius: "999px",
-    boxShadow: "0 0 10px currentColor",
-    display: "inline-block",
-  },
-
-  machineLabel: {
-    color: "#95a2b3",
-    fontSize: "12px",
-    letterSpacing: "1.4px",
-    fontWeight: "700",
-  },
-
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    gap: "24px",
-    flexWrap: "wrap",
-    marginBottom: "24px",
-  },
-
-  title: {
-    margin: 0,
-    color: "#eaf2fb",
-    fontSize: "56px",
-    lineHeight: "1",
-    fontWeight: "700",
-    letterSpacing: "-1.8px",
-  },
-
-  subtitle: {
-    marginTop: "10px",
-    marginBottom: 0,
-    color: "#8fa2b8",
-    maxWidth: "720px",
-    fontSize: "15px",
-  },
-
-  legenda: {
-    display: "flex",
-    gap: "10px",
-    flexWrap: "wrap",
-  },
-
-  badge: {
-    color: "#ffffff",
-    padding: "9px 14px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: "700",
-    whiteSpace: "nowrap",
-    boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
-  },
-
-  badgeMini: {
-    color: "#ffffff",
-    padding: "6px 10px",
-    borderRadius: "999px",
-    fontSize: "11px",
-    fontWeight: "700",
-    marginLeft: "10px",
-    whiteSpace: "nowrap",
-    boxShadow: "0 4px 10px rgba(0,0,0,0.12)",
-  },
-
-  badgeDebito: {
-    background: "linear-gradient(180deg, #ff7b89 0%, #e85d75 100%)",
-  },
-
-  badgeCredito: {
-    background: "linear-gradient(180deg, #ffc66e 0%, #e9a03b 100%)",
-  },
-
-  badgeSaldo: {
-    background: "linear-gradient(180deg, #4edbb0 0%, #2d9d8f 100%)",
-  },
-
-  topGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-    gap: "18px",
-    alignItems: "start",
-    marginBottom: "18px",
-  },
-
-  bottomGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
-    gap: "18px",
-    alignItems: "start",
-  },
-
-  card: {
-    background:
-      "linear-gradient(180deg, rgba(245,248,252,0.96) 0%, rgba(225,232,240,0.94) 100%)",
-    border: "1px solid rgba(255,255,255,0.6)",
-    borderRadius: "22px",
-    padding: "18px",
-    color: "#223548",
-    boxShadow:
-      "0 12px 28px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
-    height: "fit-content",
-  },
-
-  cardGrafico: {
-    textAlign: "center",
-  },
-
-  cardHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "12px",
-    marginBottom: "14px",
-  },
-
-  cardTitle: {
-    margin: 0,
-    color: "#1b3147",
-    fontSize: "28px",
-    fontWeight: "700",
-    letterSpacing: "-0.4px",
-  },
-
-  cardChip: {
-    fontSize: "11px",
-    fontWeight: "700",
-    letterSpacing: "0.8px",
-    textTransform: "uppercase",
-    color: "#5c6b7b",
-    background: "rgba(17,24,39,0.06)",
-    border: "1px solid rgba(17,24,39,0.08)",
-    padding: "6px 10px",
-    borderRadius: "999px",
-    whiteSpace: "nowrap",
-  },
-
-  label: {
-    color: "#334d66",
-    fontWeight: "700",
-    display: "block",
-    marginBottom: "6px",
-    fontSize: "14px",
-  },
-
-  kpiStack: {
-    display: "grid",
-    gap: "12px",
-  },
-
-  kpiRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "12px",
-    padding: "12px 14px",
-    borderRadius: "16px",
-    background: "rgba(255,255,255,0.45)",
-    border: "1px solid rgba(0,0,0,0.05)",
-  },
-
-  kpiLabel: {
-    color: "#506579",
-    fontSize: "14px",
-    fontWeight: "600",
-  },
-
-  kpiValue: {
-    fontSize: "22px",
-    fontWeight: "700",
-  },
-
-  resumoSaldo: {
-    color: "#2d9d8f",
-  },
-
-  resumoDebito: {
-    color: "#e85d75",
-  },
-
-  resumoCredito: {
-    color: "#d68a1f",
-  },
-
-  textoAuxiliar: {
-    fontSize: "14px",
-    color: "#5c6f82",
-    lineHeight: "1.5",
-    margin: 0,
-    maxWidth: "260px",
-  },
-
-  placeholderGrafico: {
-    minHeight: "240px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "14px",
-  },
-
-  graficoWrapper: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: "240px",
-    overflow: "hidden",
-  },
-
-  input: {
-    width: "100%",
-    padding: "13px 14px",
-    margin: "10px 0",
-    borderRadius: "14px",
-    border: "1px solid rgba(19, 33, 48, 0.12)",
-    boxSizing: "border-box",
-    background: "#111821",
-    color: "#f2f7fb",
-    outline: "none",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
-  },
-
-  button: {
-    width: "100%",
-    padding: "13px",
-    background: "linear-gradient(180deg, #48b9ff 0%, #2f87b7 100%)",
-    color: "#ffffff",
-    border: "none",
-    borderRadius: "14px",
-    cursor: "pointer",
-    fontWeight: "700",
-    marginTop: "4px",
-    boxShadow: "0 8px 20px rgba(47, 135, 183, 0.22)",
-  },
-
-  buttonSecundario: {
-    width: "100%",
-    padding: "13px",
-    background: "rgba(17,24,39,0.08)",
-    color: "#203243",
-    border: "1px solid rgba(17,24,39,0.12)",
-    borderRadius: "14px",
-    cursor: "pointer",
-    fontWeight: "700",
-    marginTop: "8px",
-  },
-
-  erro: {
-    color: "#c1121f",
-    fontWeight: "700",
-    marginTop: "12px",
-    marginBottom: 0,
-  },
-
-  lista: {
-    paddingLeft: "20px",
-    marginTop: "18px",
-    marginBottom: 0,
-  },
-
-  itemLista: {
-    marginBottom: "12px",
-    color: "#425a70",
-    lineHeight: "1.45",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: "10px",
-    padding: "10px 12px",
-    borderRadius: "14px",
-    background: "rgba(255,255,255,0.42)",
-    border: "1px solid rgba(0,0,0,0.04)",
-  },
-
-  itemListaColuna: {
-    marginBottom: "12px",
-    color: "#425a70",
-    lineHeight: "1.45",
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-    padding: "10px 12px",
-    borderRadius: "14px",
-    background: "rgba(255,255,255,0.42)",
-    border: "1px solid rgba(0,0,0,0.04)",
-    listStyle: "none",
-  },
-
-  itemLinhaSuperior: {
-    width: "100%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: "10px",
-  },
-
-  itemText: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  actionRow: {
-    width: "100%",
-    display: "flex",
-    gap: "8px",
-  },
-
-  actionButton: {
-    flex: 1,
-    padding: "9px 12px",
-    background: "rgba(72,185,255,0.12)",
-    color: "#204761",
-    border: "1px solid rgba(72,185,255,0.16)",
-    borderRadius: "10px",
-    cursor: "pointer",
-    fontWeight: "700",
-  },
-
-  actionButtonDanger: {
-    flex: 1,
-    padding: "9px 12px",
-    background: "rgba(232,93,117,0.12)",
-    color: "#8a2334",
-    border: "1px solid rgba(232,93,117,0.16)",
-    borderRadius: "10px",
-    cursor: "pointer",
-    fontWeight: "700",
-  },
-};
