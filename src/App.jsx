@@ -421,7 +421,9 @@ useEffect(() => {
 
   function editarPessoa(pessoa) {
     setNomePessoa(pessoa.nome);
-    setSalarioPessoa(String(pessoa.salario));
+    setSalarioPessoa(
+  String(pessoa.salario).replace(".", ",")
+);
     setPessoaEmEdicaoId(pessoa.id);
     setErroPessoa("");
   }
