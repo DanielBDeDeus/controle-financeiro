@@ -628,7 +628,11 @@ useEffect(() => {
     );
 
     setNomeGasto(gasto.nome);
-    setValorGasto(String(gasto.valor));
+    setValorGasto(
+  Number(gasto.valor)
+    .toFixed(2)
+    .replace(".", ",")
+);
     setCartaoSelecionado(
       cartaoCorrespondente ? String(cartaoCorrespondente.id) : ""
     );
@@ -1433,7 +1437,13 @@ footer: {
             <input
               type="text"
               value={salarioPessoa}
-              onChange={(e) => setSalarioPessoa(e.target.value)}
+              onChange={(e) => {
+  const valor = e.target.value
+    .replace(/[^\d,]/g, "")
+    .replace(/(,.*),/g, "$1");
+
+  setSalarioPessoa(valor);
+}}
               style={styles.input}
               placeholder="Ex.: 3500"
             />
@@ -1608,7 +1618,13 @@ footer: {
               type="text"
               placeholder="Valor"
               value={valorGasto}
-              onChange={(e) => setValorGasto(e.target.value)}
+              onChange={(e) => {
+  const valor = e.target.value
+    .replace(/[^\d,]/g, "")   // only numbers + comma
+    .replace(/(,.*),/g, "$1"); // only ONE comma
+
+  setValorGasto(valor);
+}}
               style={styles.input}
             />
 
