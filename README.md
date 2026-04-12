@@ -1,16 +1,40 @@
-# React + Vite
+# DividimOS
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Sistema de controle financeiro para casais, com visão individual e conjunta.
 
-Currently, two official plugins are available:
+## Funcionalidades
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+* Cadastro de pessoas com salário
+* Cadastro de cartões (débito e crédito)
+* Registro de gastos
+* Edição e exclusão de dados
+* Cálculo automático de saldo disponível
+* Separação entre débito e crédito
+* Filtro por perfil individual
+* Visão conjunta (Household)
+* Gráfico de distribuição de gastos
+* Persistência de dados com localStorage
+* Reset completo do sistema
 
-## React Compiler
+## Como usar
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Cadastre uma ou mais pessoas
+2. Adicione cartões (débito/crédito)
+3. Registre gastos
+4. Selecione a pessoa responsável e quem pagou
+5. Acompanhe o saldo e o gráfico automaticamente
 
-## Expanding the ESLint configuration
+## Tecnologias utilizadas
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+* React
+* Vite
+* Recharts
+* JavaScript
+
+## Objetivo
+
+Este projeto foi desenvolvido como atividade prática para aplicação de conceitos de desenvolvimento frontend com React, incluindo gerenciamento de estado, manipulação de dados e interface interativa.
+
+## Observações
+
+Os dados são armazenados localmente no navegador (localStorage), não havendo integração com backend.
