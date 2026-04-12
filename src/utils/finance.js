@@ -21,8 +21,10 @@ export function paraNumero(valor) {
   // Remove espaços
   normalizado = normalizado.replace(/\s/g, "");
 
-  // Remove separadores de milhar (.)
+// Remove separadores de milhar apenas quando há vírgula (formato BR)
+if (normalizado.includes(",")) {
   normalizado = normalizado.replace(/\./g, "");
+}
 
   // Converte vírgula decimal brasileira para ponto
   normalizado = normalizado.replace(",", ".");
