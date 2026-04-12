@@ -589,14 +589,17 @@ useEffect(() => {
       const gastosAtualizados = gastos.map((gasto) =>
         gasto.id === gastoEmEdicaoId
           ? {
-              ...gasto,
-              nome: nomeNormalizado,
-              valor,
-              cartaoNome: cartao.nome,
-              tipo: cartao.tipo,
-              pessoaId: pessoa.id,
-              pessoaNome: pessoa.nome,
-            }
+  ...gasto,
+  nome: nomeNormalizado,
+  valor,
+  cartaoNome: cartao.nome,
+  tipo: cartao.tipo,
+  pessoaId: pessoa.id,
+  pessoaNome: pessoa.nome,
+  quemPagouId: Number(quemPagouSelecionado),
+  quemPagouNome:
+    pessoas.find((p) => p.id === Number(quemPagouSelecionado))?.nome || "",
+}
           : gasto
       );
 
@@ -955,33 +958,35 @@ const valorTemaSelecionado = pessoaAtiva?.tema || "cassette_neon";
         background: "linear-gradient(180deg, #4edbb0 0%, #2d9d8f 100%)",
       },
 
-      topGrid: {
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-        gap: "18px",
-        alignItems: "start",
-        marginBottom: "18px",
-      },
+topGrid: {
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr 1fr", // force 3 columns
+  gap: "18px",
+  alignItems: "start",
+  marginBottom: "18px",
+},
+bottomGrid: {
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr", // clean 2 columns
+  gap: "18px",
+  alignItems: "start",
+  marginBottom: "18px",
+},
 
-      bottomGrid: {
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
-        gap: "18px",
-        alignItems: "start",
-        marginBottom: "18px",
-      },
-
-      card: {
-        background: temaAtivo.cardBg,
-        border: `1px solid ${temaAtivo.cardBorder}`,
-        borderRadius: "22px",
-        padding: "18px",
-        color: temaAtivo.cardText,
-        boxShadow:
-          "0 12px 28px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
-        height: "fit-content",
-      },
-
+card: {
+  background: temaAtivo.cardBg,
+  border: `1px solid ${temaAtivo.cardBorder}`,
+  borderRadius: "22px",
+  padding: "18px",
+  color: temaAtivo.cardText,
+  boxShadow:
+    "0 12px 28px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
+  height: "fit-content",
+},
+cardScroll: {
+  maxHeight: "500px",
+  overflowY: "auto",
+},
       cardGrafico: {
         textAlign: "center",
       },
@@ -1299,7 +1304,7 @@ footer: {
 
         {/* LINHA 1: PERFIL ATIVO + LEITURA + GRÁFICO */}
         <div style={styles.topGrid}>
-          <div style={styles.card}>
+          <div style={{ ...styles.card, ...styles.cardScroll }}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Visão ativa</h2>
               <span style={styles.cardChip}>Perfil</span>
@@ -1359,7 +1364,7 @@ footer: {
 
           </div>
 
-          <div style={styles.card}>
+          <div style={{ ...styles.card, ...styles.cardScroll }}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Leitura da visão</h2>
               <span style={styles.cardChip}>Filtro</span>
@@ -1436,7 +1441,7 @@ footer: {
 
         {/* LINHA 2: PESSOAS + RESUMO */}
         <div style={styles.topGrid}>
-          <div style={styles.card}>
+          <div style={{ ...styles.card, ...styles.cardScroll }}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Pessoas</h2>
               <span style={styles.cardChip}>Rendas</span>
@@ -1528,7 +1533,7 @@ footer: {
             </ul>
           </div>
 
-          <div style={styles.card}>
+          <div style={{ ...styles.card, ...styles.cardScroll }}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Resumo</h2>
               <span style={styles.cardChip}>Leitura</span>
@@ -1570,7 +1575,7 @@ footer: {
 
         {/* LINHA INFERIOR */}
         <div style={styles.bottomGrid}>
-          <div style={styles.card}>
+          <div style={{ ...styles.card, ...styles.cardScroll }}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Cartões</h2>
               <span style={styles.cardChip}>Cadastro</span>
@@ -1618,7 +1623,7 @@ footer: {
             </ul>
           </div>
 
-          <div style={styles.card}>
+          <div style={{ ...styles.card, ...styles.cardScroll }}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Gastos</h2>
               <span style={styles.cardChip}>Registro</span>
