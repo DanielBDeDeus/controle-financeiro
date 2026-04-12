@@ -2,7 +2,7 @@ import { useState } from "react";
 import { calcularSaldoDisponivel, paraNumero } from "./utils/finance";
 
 // ==============================
-// IMPORT DO GRÁFICO
+// IMPORTS DO GRÁFICO
 // ==============================
 import {
   PieChart,
@@ -14,38 +14,66 @@ import {
 
 export default function App() {
   // ==============================
-  // STATES
+  // STATES PRINCIPAIS
   // ==============================
 
+  // Salário mensal informado pelo usuário
   const [salario, setSalario] = useState("");
+
+  // Total acumulado de gastos em débito
   const [gastoDebito, setGastoDebito] = useState("");
+
+  // Total acumulado da fatura atual do crédito
   const [faturaAtual, setFaturaAtual] = useState("");
 
+  // ==============================
+  // STATES DE CARTÕES
+  // ==============================
+
+  // Lista de cartões cadastrados
   const [cartoes, setCartoes] = useState([]);
+
+  // Campo de nome do cartão
   const [nomeCartao, setNomeCartao] = useState("");
+
+  // Tipo do cartão selecionado no formulário
   const [tipoCartao, setTipoCartao] = useState("credito");
+
+  // Mensagem de erro relacionada ao cadastro de cartões
   const [erroCartao, setErroCartao] = useState("");
 
+  // ==============================
+  // STATES DE GASTOS
+  // ==============================
+
+  // Lista de gastos cadastrados
   const [gastos, setGastos] = useState([]);
+
+  // Campo de valor do gasto
   const [valorGasto, setValorGasto] = useState("");
+
+  // ID do cartão selecionado para vincular o gasto
   const [cartaoSelecionado, setCartaoSelecionado] = useState("");
 
   // ==============================
-  // CARTÕES
+  // FUNÇÃO: ADICIONAR CARTÃO
   // ==============================
 
   function adicionarCartao() {
+    // Normaliza o nome para evitar problemas com espaços e maiúsculas/minúsculas
     const nomeNormalizado = nomeCartao.trim().toLowerCase();
 
+    // Regra 1: nome do cartão não pode estar vazio
     if (!nomeNormalizado) {
       setErroCartao("Digite um nome para o cartão.");
       return;
     }
 
+    // Regra 2: não pode existir cartão com MESMO nome + MESMO tipo
     const duplicado = cartoes.some(
-      (c) =>
-        c.nome.toLowerCase() === nomeNormalizado &&
-        c.tipo === tipoCartao
+      (cartaoExistente) =>
+        cartaoExistente.nome.toLowerCase() === nomeNormalizado &&
+        cartaoExistente.tipo === tipoCartao
     );
 
     if (duplicado) {
@@ -53,30 +81,41 @@ export default function App() {
       return;
     }
 
+    // Cria o novo cartão
     const novoCartao = {
       id: Date.now(),
-      nome: nomeCartao,
+      nome: nomeCartao.trim(),
       tipo: tipoCartao,
     };
 
+    // Salva o novo cartão na lista
     setCartoes([...cartoes, novoCartao]);
+
+    // Limpa campos e erros
     setNomeCartao("");
     setErroCartao("");
   }
 
   // ==============================
-  // GASTOS
+  // FUNÇÃO: ADICIONAR GASTO
   // ==============================
 
   function adicionarGasto() {
+    // Só adiciona se houver valor e cartão selecionado
     if (!valorGasto || !cartaoSelecionado) return;
 
+    // Busca o cartão correspondente
     const cartao = cartoes.find(
-      (c) => c.id === Number(cartaoSelecionado)
+      (cartaoExistente) => cartaoExistente.id === Number(cartaoSelecionado)
     );
 
+    // Segurança extra: se por algum motivo o cartão não existir, aborta
+    if (!cartao) return;
+
+    // Converte o valor para número seguro
     const valor = paraNumero(valorGasto);
 
+    // Cria o objeto do novo gasto
     const novoGasto = {
       id: Date.now(),
       valor,
@@ -84,21 +123,25 @@ export default function App() {
       tipo: cartao.tipo,
     };
 
+    // Adiciona à lista
     setGastos([...gastos, novoGasto]);
 
+    // Atualiza os totais automaticamente conforme o tipo do cartão
     if (cartao.tipo === "debito") {
-      setGastoDebito((prev) => paraNumero(prev) + valor);
+      setGastoDebito((valorAnterior) => paraNumero(valorAnterior) + valor);
     } else {
-      setFaturaAtual((prev) => paraNumero(prev) + valor);
+      setFaturaAtual((valorAnterior) => paraNumero(valorAnterior) + valor);
     }
 
+    // Limpa apenas o campo do valor
     setValorGasto("");
   }
 
   // ==============================
-  // CÁLCULOS
+  // CÁLCULOS PRINCIPAIS
   // ==============================
 
+  // Calcula saldo disponível com base na função utilitária
   const saldoDisponivel = calcularSaldoDisponivel(
     paraNumero(salario),
     paraNumero(gastoDebito),
@@ -106,16 +149,19 @@ export default function App() {
   );
 
   // ==============================
-  // DADOS DO GRÁFICO (COM PROTEÇÃO)
+  // DADOS DO GRÁFICO
   // ==============================
 
+  // Dados reais do gráfico
   const rawData = [
     { name: "Débito", value: paraNumero(gastoDebito) || 0 },
     { name: "Crédito", value: paraNumero(faturaAtual) || 0 },
   ];
 
-  const hasData = rawData.some((d) => d.value > 0);
+  // Verifica se existe ao menos algum valor > 0
+  const hasData = rawData.some((item) => item.value > 0);
 
+  // Se não houver dados, usamos um fallback simples para o componente não "sumir"
   const dataGrafico = hasData
     ? rawData
     : [
@@ -123,6 +169,7 @@ export default function App() {
         { name: "Crédito", value: 1 },
       ];
 
+  // Cores alinhadas com a legenda do sistema
   const COLORS = ["#e63946", "#ffb703"];
 
   // ==============================
@@ -133,7 +180,7 @@ export default function App() {
     <div style={styles.container}>
       <h1 style={styles.title}>Controle Financeiro</h1>
 
-      {/* LEGENDA */}
+      {/* LEGENDA VISUAL */}
       <div style={styles.legenda}>
         <span style={{ ...styles.badge, background: "#e63946" }}>
           🔴 Débito (sai do dinheiro agora)
@@ -149,39 +196,40 @@ export default function App() {
       </div>
 
       <div style={styles.grid}>
-        {/* USUÁRIO */}
+        {/* ===================== CARD: USUÁRIO ===================== */}
         <div style={styles.card}>
-          <h2>Usuário</h2>
+          <h2 style={styles.cardTitle}>Usuário</h2>
 
-          <label>Salário:</label>
+          <label style={styles.label}>Salário:</label>
           <input
             type="number"
             value={salario}
             onChange={(e) => setSalario(e.target.value)}
             style={styles.input}
+            placeholder="Salário"
           />
         </div>
 
-        {/* RESUMO */}
+        {/* ===================== CARD: RESUMO ===================== */}
         <div style={styles.card}>
-          <h2>Resumo</h2>
+          <h2 style={styles.cardTitle}>Resumo</h2>
 
-          <p style={{ color: "#2a9d8f", fontWeight: "bold" }}>
+          <p style={{ ...styles.resumoTexto, color: "#2a9d8f", fontWeight: "bold" }}>
             Saldo: R$ {saldoDisponivel}
           </p>
 
-          <p style={{ color: "#e63946" }}>
+          <p style={{ ...styles.resumoTexto, color: "#e63946" }}>
             Débito: R$ {gastoDebito}
           </p>
 
-          <p style={{ color: "#ffb703" }}>
+          <p style={{ ...styles.resumoTexto, color: "#ffb703" }}>
             Fatura: R$ {faturaAtual}
           </p>
         </div>
 
-        {/* CARTÕES */}
+        {/* ===================== CARD: CARTÕES ===================== */}
         <div style={styles.card}>
-          <h2>Cartões</h2>
+          <h2 style={styles.cardTitle}>Cartões</h2>
 
           <input
             placeholder="Nome do cartão"
@@ -205,27 +253,28 @@ export default function App() {
 
           {erroCartao && <p style={styles.erro}>{erroCartao}</p>}
 
-          <ul>
-            {cartoes.map((c) => (
-              <li key={c.id}>
-                {c.nome}
+          <ul style={styles.lista}>
+            {cartoes.map((cartao) => (
+              <li key={cartao.id} style={styles.itemLista}>
+                <span>{cartao.nome}</span>
+
                 <span
                   style={{
                     ...styles.badge,
                     background:
-                      c.tipo === "debito" ? "#e63946" : "#ffb703",
+                      cartao.tipo === "debito" ? "#e63946" : "#ffb703",
                   }}
                 >
-                  {c.tipo}
+                  {cartao.tipo}
                 </span>
               </li>
             ))}
           </ul>
         </div>
 
-        {/* GASTOS */}
+        {/* ===================== CARD: GASTOS ===================== */}
         <div style={styles.card}>
-          <h2>Gastos</h2>
+          <h2 style={styles.cardTitle}>Gastos</h2>
 
           <input
             type="number"
@@ -241,9 +290,9 @@ export default function App() {
             style={styles.input}
           >
             <option value="">Selecione</option>
-            {cartoes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nome} ({c.tipo})
+            {cartoes.map((cartao) => (
+              <option key={cartao.id} value={cartao.id}>
+                {cartao.nome} ({cartao.tipo})
               </option>
             ))}
           </select>
@@ -252,49 +301,54 @@ export default function App() {
             Adicionar gasto
           </button>
 
-          <ul>
-            {gastos.map((g) => (
-              <li key={g.id}>
-                R$ {g.valor} - {g.cartaoNome}
+          <ul style={styles.lista}>
+            {gastos.map((gasto) => (
+              <li key={gasto.id} style={styles.itemLista}>
+                <span>
+                  R$ {gasto.valor} - {gasto.cartaoNome}
+                </span>
+
                 <span
                   style={{
                     ...styles.badge,
                     background:
-                      g.tipo === "debito" ? "#e63946" : "#ffb703",
+                      gasto.tipo === "debito" ? "#e63946" : "#ffb703",
                   }}
                 >
-                  {g.tipo}
+                  {gasto.tipo}
                 </span>
               </li>
             ))}
           </ul>
         </div>
 
-        {/* GRÁFICO */}
-        <div style={{ ...styles.card, textAlign: "center" }}>
-          <h2>Distribuição de gastos</h2>
+        {/* ===================== CARD: GRÁFICO ===================== */}
+        <div style={{ ...styles.card, ...styles.cardGrafico }}>
+          <h2 style={styles.cardTitle}>Distribuição de gastos</h2>
 
           {!hasData && (
-            <p style={{ fontSize: "12px", opacity: 0.6 }}>
+            <p style={styles.textoAuxiliar}>
               Adicione gastos para visualizar o gráfico
             </p>
           )}
 
-          <PieChart width={320} height={260}>
-            <Pie
-              data={dataGrafico}
-              dataKey="value"
-              nameKey="name"
-              outerRadius={90}
-            >
-              {dataGrafico.map((entry, index) => (
-                <Cell key={index} fill={COLORS[index]} />
-              ))}
-            </Pie>
+          <div style={styles.graficoWrapper}>
+            <PieChart width={320} height={260}>
+              <Pie
+                data={dataGrafico}
+                dataKey="value"
+                nameKey="name"
+                outerRadius={90}
+              >
+                {dataGrafico.map((item, index) => (
+                  <Cell key={index} fill={COLORS[index]} />
+                ))}
+              </Pie>
 
-            <Tooltip />
-            <Legend />
-          </PieChart>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </div>
         </div>
       </div>
     </div>
@@ -304,18 +358,22 @@ export default function App() {
 // ==============================
 // ESTILOS
 // ==============================
-
 const styles = {
   container: {
+    width: "100%",
     minHeight: "100vh",
-    background: "linear-gradient(135deg, #bde0ff, #e0f7ff)",
-    padding: "30px",
-    fontFamily: "Segoe UI",
+    background: "linear-gradient(135deg, #a8d8ff, #d6f0ff)",
+    padding: "40px",
+    boxSizing: "border-box",
+    overflowX: "hidden",
+    fontFamily: "Segoe UI, sans-serif",
   },
 
   title: {
     textAlign: "center",
     marginBottom: "20px",
+    color: "#023047",
+    textShadow: "0 2px 8px rgba(255,255,255,0.35)",
   },
 
   legenda: {
@@ -328,29 +386,76 @@ const styles = {
 
   badge: {
     color: "white",
-    padding: "5px 10px",
+    padding: "6px 12px",
     borderRadius: "8px",
     fontSize: "12px",
     marginLeft: "8px",
+    display: "inline-flex",
+    alignItems: "center",
+    whiteSpace: "nowrap",
   },
 
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
     gap: "20px",
+    alignItems: "start",
   },
 
   card: {
-    background: "rgba(255,255,255,0.25)",
-    backdropFilter: "blur(12px)",
+    background: "rgba(255, 255, 255, 0.28)",
+    backdropFilter: "blur(16px)",
+    WebkitBackdropFilter: "blur(16px)",
+    border: "1px solid rgba(255, 255, 255, 0.45)",
     borderRadius: "16px",
     padding: "20px",
+    color: "#023047",
+    height: "fit-content",
+    boxShadow: "0 8px 24px rgba(0, 70, 120, 0.12)",
+  },
+
+  cardGrafico: {
+    textAlign: "center",
+  },
+
+  cardTitle: {
+    color: "#0b4f6c",
+    marginTop: 0,
+    marginBottom: "16px",
+  },
+
+  label: {
+    color: "#0b4f6c",
+    fontWeight: "600",
+  },
+
+  resumoTexto: {
+    margin: "8px 0",
+    fontSize: "16px",
+  },
+
+  textoAuxiliar: {
+    fontSize: "12px",
+    opacity: 0.7,
+    marginBottom: "10px",
+    color: "#355070",
+  },
+
+  graficoWrapper: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: "260px",
+    overflow: "hidden",
   },
 
   input: {
     width: "100%",
     padding: "10px",
     margin: "10px 0",
+    borderRadius: "8px",
+    border: "1px solid rgba(0, 0, 0, 0.15)",
+    boxSizing: "border-box",
   },
 
   button: {
@@ -360,9 +465,22 @@ const styles = {
     color: "white",
     border: "none",
     borderRadius: "8px",
+    cursor: "pointer",
   },
 
   erro: {
-    color: "red",
+    color: "#d00000",
+    fontWeight: "600",
+  },
+
+  lista: {
+    paddingLeft: "20px",
+    marginTop: "16px",
+    marginBottom: 0,
+  },
+
+  itemLista: {
+    marginBottom: "10px",
+    color: "#355070",
   },
 };
