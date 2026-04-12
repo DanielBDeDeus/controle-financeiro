@@ -16,7 +16,6 @@ const STORAGE_KEYS = {
   cartoes: "controle-financeiro:cartoes",
   gastos: "controle-financeiro:gastos",
   perfilAtivo: "controle-financeiro:perfil-ativo",
-  mostrarCentavos: "controle-financeiro:mostrar-centavos",
   resetEtapa: "controle-financeiro:reset-etapa",
 };
 
@@ -225,14 +224,14 @@ function lerJsonStorage(chave, valorPadrao) {
     return valorPadrao;
   }
 }
-function formatarMoeda(valor, mostrarCentavos = true) {
+function formatarMoeda(valor) {
   const numeroSeguro = paraNumero(valor);
 
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-    minimumFractionDigits: mostrarCentavos ? 2 : 0,
-    maximumFractionDigits: mostrarCentavos ? 2 : 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(numeroSeguro);
 }
 
@@ -254,10 +253,6 @@ export default function App() {
   );
 
   // Tema da visão Household
-
-  const [mostrarCentavos, setMostrarCentavos] = useState(
-  () => lerTextoStorage(STORAGE_KEYS.mostrarCentavos) !== "false"
-);
 
 const [resetEtapa, setResetEtapa] = useState(
   () => Number(lerTextoStorage(STORAGE_KEYS.resetEtapa) || 0)
@@ -361,12 +356,7 @@ const [resetEtapa, setResetEtapa] = useState(
     );
   }, [perfilAtivo]);
 
-  useEffect(() => {
-  window.localStorage.setItem(
-    STORAGE_KEYS.mostrarCentavos,
-    String(mostrarCentavos)
-  );
-}, [mostrarCentavos]);
+  
 
 useEffect(() => {
   window.localStorage.setItem(
@@ -805,7 +795,6 @@ const temaAtivo = useMemo(() => {
   setFaturaAtual(0);
 
   setPerfilAtivo("household");
-  setMostrarCentavos(true);
   setResetEtapa(0);
 
   Object.values(STORAGE_KEYS).forEach((chave) => {
@@ -1333,15 +1322,6 @@ footer: {
   </>
 )}
 
-            <label style={styles.label}>Exibir centavos</label>
-            <select
-              value={mostrarCentavos ? "sim" : "nao"}
-              onChange={(e) => setMostrarCentavos(e.target.value === "sim")}
-              style={styles.input}
-            >
-              <option value="sim">Sim (R$ 1.234,56)</option>
-              <option value="nao">Não (R$ 1.235)</option>
-            </select>
 
             <div style={styles.kpiStack}>
               <div style={styles.kpiRow}>
@@ -1365,7 +1345,7 @@ footer: {
               <div style={styles.kpiRow}>
                 <span style={styles.kpiLabel}>Salário considerado</span>
                 <span style={{ ...styles.kpiValue, ...styles.resumoSaldo }}>
-                  {formatarMoeda(salarioTotalFiltrado, mostrarCentavos)}
+                  {formatarMoeda(salarioTotalFiltrado)}
                 </span>
               </div>
 
@@ -1476,7 +1456,7 @@ footer: {
                 <li key={pessoa.id} style={styles.itemListaColuna}>
                   <div style={styles.itemLinhaSuperior}>
                     <span style={styles.itemText}>
-                      {pessoa.nome} · {formatarMoeda(pessoa.salario, mostrarCentavos)}
+                      {pessoa.nome} · {formatarMoeda(pessoa.salario)}
                     </span>
 
                     <span style={{ ...styles.badgeMini, ...styles.badgeSaldo }}>
@@ -1530,28 +1510,28 @@ footer: {
                   {ehHousehold ? "Salário total" : "Salário do perfil"}
                 </span>
                 <span style={{ ...styles.kpiValue, ...styles.resumoSaldo }}>
-                  {formatarMoeda(salarioTotalFiltrado, mostrarCentavos)}
+                  {formatarMoeda(salarioTotalFiltrado)}
                 </span>
               </div>
 
               <div style={styles.kpiRow}>
                 <span style={styles.kpiLabel}>Saldo disponível</span>
                 <span style={{ ...styles.kpiValue, ...styles.resumoSaldo }}>
-                  {formatarMoeda(saldoDisponivel, mostrarCentavos)}
+                  {formatarMoeda(saldoDisponivel)}
                 </span>
               </div>
 
               <div style={styles.kpiRow}>
                 <span style={styles.kpiLabel}>Saída imediata</span>
                 <span style={{ ...styles.kpiValue, ...styles.resumoDebito }}>
-                  {formatarMoeda(gastoDebitoFiltrado, mostrarCentavos)}
+                  {formatarMoeda(gastoDebitoFiltrado)}
                 </span>
               </div>
 
               <div style={styles.kpiRow}>
                 <span style={styles.kpiLabel}>Fatura acumulada</span>
                 <span style={{ ...styles.kpiValue, ...styles.resumoCredito }}>
-                  {formatarMoeda(faturaAtualFiltrada, mostrarCentavos)}
+                  {formatarMoeda(faturaAtualFiltrada)}
                 </span>
               </div>
             </div>
@@ -1676,7 +1656,7 @@ footer: {
                 <li key={gasto.id} style={styles.itemListaColuna}>
                   <div style={styles.itemLinhaSuperior}>
                     <span style={styles.itemText}>
-                      {gasto.nome} · {formatarMoeda(gasto.valor, mostrarCentavos)} · {gasto.cartaoNome} ·{" "}
+                      {gasto.nome} · {formatarMoeda(gasto.valor)} · {gasto.cartaoNome} ·{" "}
                       {gasto.pessoaNome}
                     </span>
 
