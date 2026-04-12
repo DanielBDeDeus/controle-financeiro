@@ -960,10 +960,11 @@ const valorTemaSelecionado = pessoaAtiva?.tema || "cassette_neon";
 
 topGrid: {
   display: "grid",
-  gridTemplateColumns: "1fr 1fr 1fr", // force 3 columns
+  gridTemplateColumns: "1fr 1fr 1fr",
   gap: "18px",
   alignItems: "start",
   marginBottom: "18px",
+  alignContent: "start",
 },
 bottomGrid: {
   display: "grid",
@@ -981,7 +982,7 @@ card: {
   color: temaAtivo.cardText,
   boxShadow:
     "0 12px 28px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
-  height: "fit-content",
+
 },
 
       cardGrafico: {
@@ -1252,8 +1253,9 @@ resetButton: {
   letterSpacing: "0.4px",
 },
 footer: {
-  marginTop: "40px",
+  marginTop: "20px",
   paddingTop: "20px",
+  paddingBottom: "10px",
   borderTop: "1px solid rgba(255,255,255,0.08)",
 },
     }),
@@ -1436,8 +1438,8 @@ footer: {
           </div>
         </div>
 
-        {/* LINHA 2: PESSOAS + RESUMO */}
-        <div style={styles.topGrid}>
+{/* LINHA 2: PESSOAS + RESUMO */}
+<div style={styles.bottomGrid}>
           <div style={styles.card}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Pessoas</h2>
@@ -1530,7 +1532,7 @@ footer: {
             </ul>
           </div>
 
-          <div style={styles.card}>
+          <div style={{ ...styles.card, position: "sticky", top: "20px" }}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Resumo</h2>
               <span style={styles.cardChip}>Leitura</span>
@@ -1569,11 +1571,11 @@ footer: {
             </div>
           </div>
         </div>
-
-        {/* LINHA INFERIOR */}
         <div style={styles.bottomGrid}>
           <div style={styles.card}>
             <div style={styles.cardHeader}>
+              {/* LINHA INFERIOR */}
+
               <h2 style={styles.cardTitle}>Cartões</h2>
               <span style={styles.cardChip}>Cadastro</span>
             </div>
@@ -1742,6 +1744,9 @@ footer: {
           </div>
         </div>
       </div>
+
+
+      
       <div style={styles.footer}>
   <div style={styles.resetBox}>
     <p style={styles.resetTitle}>☢ Zona de risco</p>
@@ -1761,8 +1766,8 @@ footer: {
         Cancelar
       </button>
     )}
-  </div>
-</div>
+        </div>
+      </div>
     </div>
   );
 }
