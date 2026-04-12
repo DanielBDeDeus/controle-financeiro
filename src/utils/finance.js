@@ -1,15 +1,38 @@
-// Função para formatar valores em reais (R$)
+// Formata valores em reais (R$) sempre com centavos
 export function formatarBRL(valor) {
+  const numeroSeguro = paraNumero(valor);
+
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-  }).format(Number(valor || 0));
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(numeroSeguro);
 }
 
-// Converte qualquer valor para número seguro
+// Converte qualquer valor para número seguro (suporte completo pt-BR)
 export function paraNumero(valor) {
-  const numero = Number(valor);
-  return Number.isFinite(numero) ? numero : 0;
+  if (typeof valor === "number") return valor;
+
+  if (!valor) return 0;
+
+  let normalizado = String(valor).trim();
+
+  // Remove espaços
+  normalizado = normalizado.replace(/\s/g, "");
+
+  // Remove separadores de milhar (.)
+  normalizado = normalizado.replace(/\./g, "");
+
+  // Converte vírgula decimal brasileira para ponto
+  normalizado = normalizado.replace(",", ".");
+
+  // Remove qualquer caractere inválido (mantém só números e ponto)
+  normalizado = normalizado.replace(/[^0-9.]/g, "");
+
+  const numero = Number(normalizado);
+
+  return Number.isNaN(numero) ? 0 : numero;
 }
 
 // Retorna a data de hoje no formato YYYY-MM-DD
@@ -40,5 +63,9 @@ export function classificarGastoCredito(dataGasto, diaFechamento) {
 
 // Calcula saldo disponível
 export function calcularSaldoDisponivel(salario, gastoDebito, faturaAtual) {
-  return paraNumero(salario) - paraNumero(gastoDebito) - paraNumero(faturaAtual);
+  return (
+    paraNumero(salario) -
+    paraNumero(gastoDebito) -
+    paraNumero(faturaAtual)
+  );
 }
