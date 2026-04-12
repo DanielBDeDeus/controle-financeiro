@@ -307,6 +307,7 @@ const [resetEtapa, setResetEtapa] = useState(
   const [valorGasto, setValorGasto] = useState("");
   const [cartaoSelecionado, setCartaoSelecionado] = useState("");
   const [pessoaSelecionada, setPessoaSelecionada] = useState("");
+  const [quemPagouSelecionado, setQuemPagouSelecionado] = useState("");
   const [gastoEmEdicaoId, setGastoEmEdicaoId] = useState(null);
   const [erroGasto, setErroGasto] = useState("");
 
@@ -515,6 +516,7 @@ useEffect(() => {
   // ==============================
 
   function limparFormularioGasto() {
+    setQuemPagouSelecionado("");
     setNomeGasto("");
     setValorGasto("");
     setCartaoSelecionado("");
@@ -558,6 +560,10 @@ useEffect(() => {
       setErroGasto("Selecione a pessoa responsável pelo gasto.");
       return;
     }
+    if (!quemPagouSelecionado) {
+  setErroGasto("Selecione quem pagou o gasto.");
+  return;
+}
 
     const cartao = cartoes.find(
       (cartaoExistente) => cartaoExistente.id === Number(cartaoSelecionado)
@@ -600,15 +606,21 @@ useEffect(() => {
       return;
     }
 
-    const novoGasto = {
-      id: Date.now(),
-      nome: nomeNormalizado,
-      valor,
-      cartaoNome: cartao.nome,
-      tipo: cartao.tipo,
-      pessoaId: pessoa.id,
-      pessoaNome: pessoa.nome,
-    };
+const quemPagou = pessoas.find(
+  (p) => p.id === Number(quemPagouSelecionado)
+);
+
+const novoGasto = {
+  id: Date.now(),
+  nome: nomeNormalizado,
+  valor,
+  cartaoNome: cartao.nome,
+  tipo: cartao.tipo,
+  pessoaId: pessoa.id,
+  pessoaNome: pessoa.nome,
+  quemPagouId: quemPagou.id,
+  quemPagouNome: quemPagou.nome,
+};
 
     const novaLista = [...gastos, novoGasto];
     setGastos(novaLista);
@@ -622,24 +634,29 @@ useEffect(() => {
     limparFormularioGasto();
   }
 
-  function editarGasto(gasto) {
-    const cartaoCorrespondente = cartoes.find(
-      (cartao) => cartao.nome === gasto.cartaoNome && cartao.tipo === gasto.tipo
-    );
+function editarGasto(gasto) {
+  const cartaoCorrespondente = cartoes.find(
+    (cartao) =>
+      cartao.nome === gasto.cartaoNome &&
+      cartao.tipo === gasto.tipo
+  );
 
-    setNomeGasto(gasto.nome);
-    setValorGasto(
-  Number(gasto.valor)
-    .toFixed(2)
-    .replace(".", ",")
-);
-    setCartaoSelecionado(
-      cartaoCorrespondente ? String(cartaoCorrespondente.id) : ""
-    );
-    setPessoaSelecionada(String(gasto.pessoaId));
-    setGastoEmEdicaoId(gasto.id);
-    setErroGasto("");
-  }
+  setQuemPagouSelecionado(String(gasto.quemPagouId || ""));
+  setNomeGasto(gasto.nome);
+  setValorGasto(
+    Number(gasto.valor)
+      .toFixed(2)
+      .replace(".", ",")
+  );
+
+  setCartaoSelecionado(
+    cartaoCorrespondente ? String(cartaoCorrespondente.id) : ""
+  );
+
+  setPessoaSelecionada(String(gasto.pessoaId));
+  setGastoEmEdicaoId(gasto.id);
+  setErroGasto("");
+}
 
   function excluirGasto(idGasto) {
     const gastosRestantes = gastos.filter((gasto) => gasto.id !== idGasto);
@@ -779,6 +796,7 @@ const temaAtivo = useMemo(() => {
   }
   function limparTudo() {
   setPessoas([]);
+  setQuemPagouSelecionado("");
   setNomePessoa("");
   setSalarioPessoa("");
   setPessoaEmEdicaoId(null);
@@ -1640,6 +1658,18 @@ footer: {
                 </option>
               ))}
             </select>
+            <select
+  value={quemPagouSelecionado}
+  onChange={(e) => setQuemPagouSelecionado(e.target.value)}
+  style={styles.input}
+>
+  <option value="">Quem pagou?</option>
+  {pessoas.map((pessoa) => (
+    <option key={pessoa.id} value={pessoa.id}>
+      {pessoa.nome}
+    </option>
+  ))}
+</select>
 
             <select
               value={cartaoSelecionado}
@@ -1674,8 +1704,7 @@ footer: {
                 <li key={gasto.id} style={styles.itemListaColuna}>
                   <div style={styles.itemLinhaSuperior}>
                     <span style={styles.itemText}>
-                      {gasto.nome} · {formatarMoeda(gasto.valor)} · {gasto.cartaoNome} ·{" "}
-                      {gasto.pessoaNome}
+{gasto.nome} · {formatarMoeda(gasto.valor)} · {gasto.cartaoNome} · {gasto.pessoaNome} · pago por {gasto.quemPagouNome}
                     </span>
 
                     <span
