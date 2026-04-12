@@ -1,16 +1,54 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { calcularSaldoDisponivel, paraNumero } from "./utils/finance";
 
 // ==============================
 // IMPORTS DO GRÁFICO
 // ==============================
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-} from "recharts";
+import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
+
+// ==============================
+// CHAVES DO LOCALSTORAGE
+// ==============================
+const STORAGE_KEYS = {
+  salario: "controle-financeiro:salario",
+  gastoDebito: "controle-financeiro:gasto-debito",
+  faturaAtual: "controle-financeiro:fatura-atual",
+  cartoes: "controle-financeiro:cartoes",
+  gastos: "controle-financeiro:gastos",
+};
+
+// ==============================
+// FUNÇÕES AUXILIARES DE LEITURA
+// ==============================
+
+// Lê texto simples do localStorage
+function lerTextoStorage(chave) {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  const valorSalvo = window.localStorage.getItem(chave);
+  return valorSalvo ?? "";
+}
+
+// Lê JSON do localStorage com fallback seguro
+function lerJsonStorage(chave, valorPadrao) {
+  if (typeof window === "undefined") {
+    return valorPadrao;
+  }
+
+  const valorSalvo = window.localStorage.getItem(chave);
+
+  if (!valorSalvo) {
+    return valorPadrao;
+  }
+
+  try {
+    return JSON.parse(valorSalvo);
+  } catch {
+    return valorPadrao;
+  }
+}
 
 export default function App() {
   // ==============================
@@ -18,20 +56,28 @@ export default function App() {
   // ==============================
 
   // Salário mensal do usuário
-  const [salario, setSalario] = useState("");
+  const [salario, setSalario] = useState(() =>
+    lerTextoStorage(STORAGE_KEYS.salario)
+  );
 
   // Total acumulado de gastos em débito
-  const [gastoDebito, setGastoDebito] = useState("");
+  const [gastoDebito, setGastoDebito] = useState(() =>
+    lerTextoStorage(STORAGE_KEYS.gastoDebito)
+  );
 
   // Total acumulado da fatura atual de crédito
-  const [faturaAtual, setFaturaAtual] = useState("");
+  const [faturaAtual, setFaturaAtual] = useState(() =>
+    lerTextoStorage(STORAGE_KEYS.faturaAtual)
+  );
 
   // ==============================
   // STATES DE CARTÕES
   // ==============================
 
   // Lista de cartões cadastrados
-  const [cartoes, setCartoes] = useState([]);
+  const [cartoes, setCartoes] = useState(() =>
+    lerJsonStorage(STORAGE_KEYS.cartoes, [])
+  );
 
   // Nome do cartão digitado no formulário
   const [nomeCartao, setNomeCartao] = useState("");
@@ -47,7 +93,9 @@ export default function App() {
   // ==============================
 
   // Lista de gastos cadastrados
-  const [gastos, setGastos] = useState([]);
+  const [gastos, setGastos] = useState(() =>
+    lerJsonStorage(STORAGE_KEYS.gastos, [])
+  );
 
   // Nome do gasto
   const [nomeGasto, setNomeGasto] = useState("");
@@ -60,6 +108,47 @@ export default function App() {
 
   // Mensagem de erro ao cadastrar gasto
   const [erroGasto, setErroGasto] = useState("");
+
+  // ==============================
+  // EFEITOS DE PERSISTÊNCIA
+  // ==============================
+
+  // Salva salário sempre que ele mudar
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.salario, salario);
+  }, [salario]);
+
+  // Salva total de débito sempre que ele mudar
+  useEffect(() => {
+    window.localStorage.setItem(
+      STORAGE_KEYS.gastoDebito,
+      String(gastoDebito)
+    );
+  }, [gastoDebito]);
+
+  // Salva total da fatura sempre que ela mudar
+  useEffect(() => {
+    window.localStorage.setItem(
+      STORAGE_KEYS.faturaAtual,
+      String(faturaAtual)
+    );
+  }, [faturaAtual]);
+
+  // Salva lista de cartões sempre que ela mudar
+  useEffect(() => {
+    window.localStorage.setItem(
+      STORAGE_KEYS.cartoes,
+      JSON.stringify(cartoes)
+    );
+  }, [cartoes]);
+
+  // Salva lista de gastos sempre que ela mudar
+  useEffect(() => {
+    window.localStorage.setItem(
+      STORAGE_KEYS.gastos,
+      JSON.stringify(gastos)
+    );
+  }, [gastos]);
 
   // ==============================
   // FUNÇÃO: ADICIONAR CARTÃO
@@ -164,6 +253,7 @@ export default function App() {
     // Limpa formulário e erro
     setNomeGasto("");
     setValorGasto("");
+    setCartaoSelecionado("");
     setErroGasto("");
   }
 
@@ -293,7 +383,8 @@ export default function App() {
             {!mostrarGrafico ? (
               <div style={styles.placeholderGrafico}>
                 <p style={styles.textoAuxiliar}>
-                  O gráfico aparecerá depois que você cadastrar ao menos um gasto.
+                  O gráfico aparecerá depois que você cadastrar ao menos um
+                  gasto.
                 </p>
               </div>
             ) : (
