@@ -66,7 +66,7 @@ export default function App() {
   // ==============================
 
   function adicionarCartao() {
-    // Normaliza o nome para evitar duplicidade boba com caixa alta/baixa
+    // Normaliza o nome para evitar duplicidade por caixa alta/baixa
     const nomeNormalizado = nomeCartao.trim().toLowerCase();
 
     // Validação: nome obrigatório
@@ -184,10 +184,10 @@ export default function App() {
     { name: "Crédito", value: paraNumero(faturaAtual) || 0 },
   ];
 
-  // Cores do gráfico alinhadas com o restante da UI
-  const COLORS = ["#ff6b6b", "#f4a261"];
+  // Cores do gráfico alinhadas com o restante da interface
+  const COLORS = ["#ff6b7a", "#ffb84d"];
 
-  // Só mostra gráfico quando existir ao menos 1 gasto cadastrado
+  // Só mostra gráfico quando existir ao menos 1 gasto
   const mostrarGrafico = gastos.length > 0;
 
   // ==============================
@@ -197,58 +197,146 @@ export default function App() {
   return (
     <div style={styles.container}>
       <div style={styles.shell}>
-        <h1 style={styles.title}>Controle Financeiro</h1>
+        {/* BARRA SUPERIOR / IDENTIDADE VISUAL */}
+        <div style={styles.machineBar}>
+          <div style={styles.machineLights}>
+            <span style={{ ...styles.machineDot, background: "#ff6b7a" }} />
+            <span style={{ ...styles.machineDot, background: "#ffb84d" }} />
+            <span style={{ ...styles.machineDot, background: "#57d3a4" }} />
+          </div>
 
-        {/* LEGENDA */}
-        <div style={styles.legenda}>
-          <span style={{ ...styles.badge, ...styles.badgeDebito }}>
-            Débito (sai do dinheiro agora)
-          </span>
-
-          <span style={{ ...styles.badge, ...styles.badgeCredito }}>
-            Crédito (vai para fatura)
-          </span>
-
-          <span style={{ ...styles.badge, ...styles.badgeSaldo }}>
-            Saldo disponível
-          </span>
+          <div style={styles.machineLabel}>FINANCE MODULE / HOME PANEL</div>
         </div>
 
-        <div style={styles.grid}>
-          {/* ===================== CARD: USUÁRIO ===================== */}
-          <div style={styles.card}>
-            <h2 style={styles.cardTitle}>Usuário</h2>
+        {/* CABEÇALHO */}
+        <div style={styles.header}>
+          <div>
+            <h1 style={styles.title}>Controle Financeiro</h1>
+            <p style={styles.subtitle}>
+              Painel pessoal para visualizar saldo, cartões, gastos e impacto
+              financeiro em tempo real.
+            </p>
+          </div>
 
-            <label style={styles.label}>Salário:</label>
+          <div style={styles.legenda}>
+            <span style={{ ...styles.badge, ...styles.badgeDebito }}>
+              Débito
+            </span>
+
+            <span style={{ ...styles.badge, ...styles.badgeCredito }}>
+              Crédito
+            </span>
+
+            <span style={{ ...styles.badge, ...styles.badgeSaldo }}>
+              Saldo
+            </span>
+          </div>
+        </div>
+
+        {/* LINHA SUPERIOR */}
+        <div style={styles.topGrid}>
+          {/* CARD: USUÁRIO */}
+          <div style={styles.card}>
+            <div style={styles.cardHeader}>
+              <h2 style={styles.cardTitle}>Usuário</h2>
+              <span style={styles.cardChip}>Entrada</span>
+            </div>
+
+            <label style={styles.label}>Salário mensal</label>
             <input
               type="number"
               value={salario}
               onChange={(e) => setSalario(e.target.value)}
               style={styles.input}
-              placeholder="Salário"
+              placeholder="Ex.: 3500"
             />
           </div>
 
-          {/* ===================== CARD: RESUMO ===================== */}
+          {/* CARD: RESUMO */}
           <div style={styles.card}>
-            <h2 style={styles.cardTitle}>Resumo</h2>
+            <div style={styles.cardHeader}>
+              <h2 style={styles.cardTitle}>Resumo</h2>
+              <span style={styles.cardChip}>Leitura</span>
+            </div>
 
-            <p style={{ ...styles.resumoTexto, ...styles.resumoSaldo }}>
-              Saldo: R$ {saldoDisponivel}
-            </p>
+            <div style={styles.kpiStack}>
+              <div style={styles.kpiRow}>
+                <span style={styles.kpiLabel}>Saldo disponível</span>
+                <span style={{ ...styles.kpiValue, ...styles.resumoSaldo }}>
+                  R$ {saldoDisponivel}
+                </span>
+              </div>
 
-            <p style={{ ...styles.resumoTexto, ...styles.resumoDebito }}>
-              Débito: R$ {gastoDebito}
-            </p>
+              <div style={styles.kpiRow}>
+                <span style={styles.kpiLabel}>Saída imediata</span>
+                <span style={{ ...styles.kpiValue, ...styles.resumoDebito }}>
+                  R$ {gastoDebito}
+                </span>
+              </div>
 
-            <p style={{ ...styles.resumoTexto, ...styles.resumoCredito }}>
-              Fatura: R$ {faturaAtual}
-            </p>
+              <div style={styles.kpiRow}>
+                <span style={styles.kpiLabel}>Fatura acumulada</span>
+                <span style={{ ...styles.kpiValue, ...styles.resumoCredito }}>
+                  R$ {faturaAtual}
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* ===================== CARD: CARTÕES ===================== */}
+          {/* CARD: GRÁFICO */}
+          <div style={{ ...styles.card, ...styles.cardGrafico }}>
+            <div style={styles.cardHeader}>
+              <h2 style={styles.cardTitle}>Distribuição</h2>
+              <span style={styles.cardChip}>Visual</span>
+            </div>
+
+            {!mostrarGrafico ? (
+              <div style={styles.placeholderGrafico}>
+                <p style={styles.textoAuxiliar}>
+                  O gráfico aparecerá depois que você cadastrar ao menos um gasto.
+                </p>
+              </div>
+            ) : (
+              <div style={styles.graficoWrapper}>
+                <PieChart width={320} height={240}>
+                  <Pie
+                    data={dataGrafico}
+                    dataKey="value"
+                    nameKey="name"
+                    outerRadius={82}
+                    isAnimationActive={true}
+                    animationBegin={0}
+                    animationDuration={800}
+                    animationEasing="ease-out"
+                  >
+                    {dataGrafico.map((item, index) => (
+                      <Cell key={index} fill={COLORS[index]} />
+                    ))}
+                  </Pie>
+
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: 12,
+                      border: "1px solid rgba(255,255,255,0.15)",
+                      background: "#111821",
+                      color: "#f3f7fb",
+                    }}
+                  />
+                  <Legend />
+                </PieChart>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* LINHA INFERIOR */}
+        <div style={styles.bottomGrid}>
+          {/* CARD: CARTÕES */}
           <div style={styles.card}>
-            <h2 style={styles.cardTitle}>Cartões</h2>
+            <div style={styles.cardHeader}>
+              <h2 style={styles.cardTitle}>Cartões</h2>
+              <span style={styles.cardChip}>Cadastro</span>
+            </div>
 
             <input
               placeholder="Nome do cartão"
@@ -267,7 +355,7 @@ export default function App() {
             </select>
 
             <button onClick={adicionarCartao} style={styles.button}>
-              Adicionar
+              Adicionar cartão
             </button>
 
             {erroCartao && <p style={styles.erro}>{erroCartao}</p>}
@@ -275,7 +363,7 @@ export default function App() {
             <ul style={styles.lista}>
               {cartoes.map((cartao) => (
                 <li key={cartao.id} style={styles.itemLista}>
-                  <span>{cartao.nome}</span>
+                  <span style={styles.itemText}>{cartao.nome}</span>
 
                   <span
                     style={{
@@ -292,9 +380,12 @@ export default function App() {
             </ul>
           </div>
 
-          {/* ===================== CARD: GASTOS ===================== */}
+          {/* CARD: GASTOS */}
           <div style={styles.card}>
-            <h2 style={styles.cardTitle}>Gastos</h2>
+            <div style={styles.cardHeader}>
+              <h2 style={styles.cardTitle}>Gastos</h2>
+              <span style={styles.cardChip}>Registro</span>
+            </div>
 
             <input
               type="text"
@@ -317,7 +408,7 @@ export default function App() {
               onChange={(e) => setCartaoSelecionado(e.target.value)}
               style={styles.input}
             >
-              <option value="">Selecione</option>
+              <option value="">Selecione um cartão</option>
               {cartoes.map((cartao) => (
                 <option key={cartao.id} value={cartao.id}>
                   {cartao.nome} ({cartao.tipo})
@@ -334,8 +425,8 @@ export default function App() {
             <ul style={styles.lista}>
               {gastos.map((gasto) => (
                 <li key={gasto.id} style={styles.itemLista}>
-                  <span>
-                    {gasto.nome} - R$ {gasto.valor} - {gasto.cartaoNome}
+                  <span style={styles.itemText}>
+                    {gasto.nome} · R$ {gasto.valor} · {gasto.cartaoNome}
                   </span>
 
                   <span
@@ -352,41 +443,6 @@ export default function App() {
               ))}
             </ul>
           </div>
-
-          {/* ===================== CARD: GRÁFICO / PLACEHOLDER ===================== */}
-          <div style={{ ...styles.card, ...styles.cardGrafico }}>
-            <h2 style={styles.cardTitle}>Distribuição de gastos</h2>
-
-            {!mostrarGrafico ? (
-              <div style={styles.placeholderGrafico}>
-                <p style={styles.textoAuxiliar}>
-                  O gráfico aparecerá depois que você cadastrar ao menos um gasto.
-                </p>
-              </div>
-            ) : (
-              <div style={styles.graficoWrapper}>
-                <PieChart width={320} height={260}>
-                  <Pie
-                    data={dataGrafico}
-                    dataKey="value"
-                    nameKey="name"
-                    outerRadius={90}
-                    isAnimationActive={true}
-                    animationBegin={0}
-                    animationDuration={700}
-                    animationEasing="ease-out"
-                  >
-                    {dataGrafico.map((item, index) => (
-                      <Cell key={index} fill={COLORS[index]} />
-                    ))}
-                  </Pie>
-
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>
@@ -400,114 +456,212 @@ const styles = {
   container: {
     width: "100%",
     minHeight: "100vh",
-    background:
-      "linear-gradient(180deg, #d6ecff 0%, #c4def7 45%, #b8d5f0 100%)",
-    padding: "32px",
+    padding: "28px",
     boxSizing: "border-box",
     overflowX: "hidden",
-    fontFamily:
-      '"Segoe UI", "Trebuchet MS", "Verdana", sans-serif',
   },
 
-  // "Moldura" central para dar sensação mais organizada
+  // Casca principal com cara de painel / hardware
   shell: {
-    maxWidth: "1400px",
+    maxWidth: "1480px",
     margin: "0 auto",
+    padding: "18px",
+    borderRadius: "28px",
+    background:
+      "linear-gradient(180deg, rgba(18,24,32,0.94) 0%, rgba(12,17,24,0.96) 100%)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    boxShadow:
+      "0 24px 80px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)",
+  },
+
+  machineBar: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "18px",
+    paddingBottom: "12px",
+    borderBottom: "1px solid rgba(255,255,255,0.07)",
+  },
+
+  machineLights: {
+    display: "flex",
+    gap: "8px",
+  },
+
+  machineDot: {
+    width: "10px",
+    height: "10px",
+    borderRadius: "999px",
+    boxShadow: "0 0 10px currentColor",
+    display: "inline-block",
+  },
+
+  machineLabel: {
+    color: "#95a2b3",
+    fontSize: "12px",
+    letterSpacing: "1.4px",
+    fontWeight: "700",
+  },
+
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    gap: "24px",
+    flexWrap: "wrap",
+    marginBottom: "24px",
   },
 
   title: {
-    textAlign: "center",
-    marginBottom: "20px",
-    color: "#16324f",
-    textShadow: "0 1px 0 rgba(255,255,255,0.6)",
-    letterSpacing: "0.5px",
+    margin: 0,
+    color: "#eaf2fb",
     fontSize: "56px",
+    lineHeight: "1",
     fontWeight: "700",
+    letterSpacing: "-1.8px",
+  },
+
+  subtitle: {
+    marginTop: "10px",
+    marginBottom: 0,
+    color: "#8fa2b8",
+    maxWidth: "720px",
+    fontSize: "15px",
   },
 
   legenda: {
     display: "flex",
-    justifyContent: "center",
-    gap: "12px",
-    marginBottom: "24px",
+    gap: "10px",
     flexWrap: "wrap",
   },
 
   badge: {
     color: "#ffffff",
-    padding: "8px 14px",
-    borderRadius: "10px",
-    fontSize: "13px",
+    padding: "9px 14px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "700",
     whiteSpace: "nowrap",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+    boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
   },
 
   badgeMini: {
     color: "#ffffff",
-    padding: "5px 10px",
-    borderRadius: "10px",
-    fontSize: "12px",
+    padding: "6px 10px",
+    borderRadius: "999px",
+    fontSize: "11px",
+    fontWeight: "700",
     marginLeft: "10px",
     whiteSpace: "nowrap",
+    boxShadow: "0 4px 10px rgba(0,0,0,0.12)",
   },
 
   badgeDebito: {
-    background: "#e85d75",
+    background: "linear-gradient(180deg, #ff7b89 0%, #e85d75 100%)",
   },
 
   badgeCredito: {
-    background: "#e9a03b",
+    background: "linear-gradient(180deg, #ffc66e 0%, #e9a03b 100%)",
   },
 
   badgeSaldo: {
-    background: "#2d9d8f",
+    background: "linear-gradient(180deg, #4edbb0 0%, #2d9d8f 100%)",
   },
 
-  grid: {
+  topGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+    gap: "18px",
+    alignItems: "start",
+    marginBottom: "18px",
+  },
+
+  bottomGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
     gap: "18px",
     alignItems: "start",
   },
 
-  // Visual mais cassette-futurism minimalista:
-  // menos vidro exagerado, mais painel translúcido limpo
+  // Painéis internos lembrando equipamento / módulo
   card: {
-    background: "rgba(255, 255, 255, 0.22)",
-    backdropFilter: "blur(12px)",
-    WebkitBackdropFilter: "blur(12px)",
-    border: "1px solid rgba(255, 255, 255, 0.55)",
-    borderRadius: "18px",
+    background:
+      "linear-gradient(180deg, rgba(245,248,252,0.96) 0%, rgba(225,232,240,0.94) 100%)",
+    border: "1px solid rgba(255,255,255,0.6)",
+    borderRadius: "22px",
     padding: "18px",
-    color: "#1d3557",
-    height: "fit-content",
+    color: "#223548",
     boxShadow:
-      "0 10px 24px rgba(40, 80, 120, 0.12), inset 0 1px 0 rgba(255,255,255,0.35)",
+      "0 12px 28px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
+    height: "fit-content",
   },
 
   cardGrafico: {
     textAlign: "center",
   },
 
+  cardHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "14px",
+  },
+
   cardTitle: {
-    color: "#1a4f74",
-    marginTop: 0,
-    marginBottom: "16px",
-    fontSize: "22px",
+    margin: 0,
+    color: "#1b3147",
+    fontSize: "28px",
     fontWeight: "700",
+    letterSpacing: "-0.4px",
+  },
+
+  cardChip: {
+    fontSize: "11px",
+    fontWeight: "700",
+    letterSpacing: "0.8px",
+    textTransform: "uppercase",
+    color: "#5c6b7b",
+    background: "rgba(17,24,39,0.06)",
+    border: "1px solid rgba(17,24,39,0.08)",
+    padding: "6px 10px",
+    borderRadius: "999px",
+    whiteSpace: "nowrap",
   },
 
   label: {
-    color: "#234b6f",
-    fontWeight: "600",
+    color: "#334d66",
+    fontWeight: "700",
     display: "block",
     marginBottom: "6px",
+    fontSize: "14px",
   },
 
-  resumoTexto: {
-    margin: "10px 0",
-    fontSize: "17px",
+  kpiStack: {
+    display: "grid",
+    gap: "12px",
+  },
+
+  kpiRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "12px",
+    padding: "12px 14px",
+    borderRadius: "16px",
+    background: "rgba(255,255,255,0.45)",
+    border: "1px solid rgba(0,0,0,0.05)",
+  },
+
+  kpiLabel: {
+    color: "#506579",
+    fontSize: "14px",
     fontWeight: "600",
+  },
+
+  kpiValue: {
+    fontSize: "22px",
+    fontWeight: "700",
   },
 
   resumoSaldo: {
@@ -519,73 +673,89 @@ const styles = {
   },
 
   resumoCredito: {
-    color: "#e9a03b",
+    color: "#d68a1f",
   },
 
   textoAuxiliar: {
     fontSize: "14px",
-    opacity: 0.82,
-    margin: 0,
-    color: "#486581",
+    color: "#5c6f82",
     lineHeight: "1.5",
+    margin: 0,
+    maxWidth: "260px",
   },
 
   placeholderGrafico: {
-    minHeight: "260px",
+    minHeight: "240px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "20px",
+    padding: "14px",
   },
 
   graficoWrapper: {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    minHeight: "260px",
+    minHeight: "240px",
     overflow: "hidden",
   },
 
   input: {
     width: "100%",
-    padding: "12px 14px",
+    padding: "13px 14px",
     margin: "10px 0",
-    borderRadius: "10px",
-    border: "1px solid rgba(0, 0, 0, 0.12)",
+    borderRadius: "14px",
+    border: "1px solid rgba(19, 33, 48, 0.12)",
     boxSizing: "border-box",
-    background: "rgba(255,255,255,0.82)",
-    color: "#17324d",
+    background: "#111821",
+    color: "#f2f7fb",
     outline: "none",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
   },
 
   button: {
     width: "100%",
-    padding: "12px",
-    background: "#2f87b7",
-    color: "white",
+    padding: "13px",
+    background:
+      "linear-gradient(180deg, #48b9ff 0%, #2f87b7 100%)",
+    color: "#ffffff",
     border: "none",
-    borderRadius: "10px",
+    borderRadius: "14px",
     cursor: "pointer",
     fontWeight: "700",
-    boxShadow: "0 4px 10px rgba(47, 135, 183, 0.2)",
+    marginTop: "4px",
+    boxShadow: "0 8px 20px rgba(47, 135, 183, 0.22)",
   },
 
   erro: {
     color: "#c1121f",
     fontWeight: "700",
-    marginTop: "10px",
+    marginTop: "12px",
     marginBottom: 0,
   },
 
   lista: {
     paddingLeft: "20px",
-    marginTop: "16px",
+    marginTop: "18px",
     marginBottom: 0,
   },
 
   itemLista: {
     marginBottom: "12px",
-    color: "#355070",
-    lineHeight: "1.4",
+    color: "#425a70",
+    lineHeight: "1.45",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "10px",
+    padding: "10px 12px",
+    borderRadius: "14px",
+    background: "rgba(255,255,255,0.42)",
+    border: "1px solid rgba(0,0,0,0.04)",
+  },
+
+  itemText: {
+    flex: 1,
+    minWidth: 0,
   },
 };
