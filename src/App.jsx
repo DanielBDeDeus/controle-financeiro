@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { calcularSaldoDisponivel, paraNumero } from "./utils/finance";
 
 // ==============================
@@ -10,7 +10,7 @@ import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 // CHAVES DO LOCALSTORAGE
 // ==============================
 const STORAGE_KEYS = {
-  salario: "controle-financeiro:salario",
+  pessoas: "controle-financeiro:pessoas",
   gastoDebito: "controle-financeiro:gasto-debito",
   faturaAtual: "controle-financeiro:fatura-atual",
   cartoes: "controle-financeiro:cartoes",
@@ -52,13 +52,29 @@ function lerJsonStorage(chave, valorPadrao) {
 
 export default function App() {
   // ==============================
-  // STATES PRINCIPAIS
+  // STATES DE PESSOAS
   // ==============================
 
-  // Salário mensal do usuário
-  const [salario, setSalario] = useState(() =>
-    lerTextoStorage(STORAGE_KEYS.salario)
+  // Lista de pessoas cadastradas
+  const [pessoas, setPessoas] = useState(() =>
+    lerJsonStorage(STORAGE_KEYS.pessoas, [])
   );
+
+  // Nome digitado no formulário de pessoa
+  const [nomePessoa, setNomePessoa] = useState("");
+
+  // Salário digitado no formulário de pessoa
+  const [salarioPessoa, setSalarioPessoa] = useState("");
+
+  // Guarda qual pessoa está sendo editada
+  const [pessoaEmEdicaoId, setPessoaEmEdicaoId] = useState(null);
+
+  // Mensagem de erro ao salvar pessoa
+  const [erroPessoa, setErroPessoa] = useState("");
+
+  // ==============================
+  // STATES PRINCIPAIS
+  // ==============================
 
   // Total acumulado de gastos em débito
   const [gastoDebito, setGastoDebito] = useState(() =>
@@ -106,6 +122,12 @@ export default function App() {
   // Cartão selecionado para o gasto
   const [cartaoSelecionado, setCartaoSelecionado] = useState("");
 
+  // Pessoa selecionada para o gasto
+  const [pessoaSelecionada, setPessoaSelecionada] = useState("");
+
+  // Guarda qual gasto está sendo editado
+  const [gastoEmEdicaoId, setGastoEmEdicaoId] = useState(null);
+
   // Mensagem de erro ao cadastrar gasto
   const [erroGasto, setErroGasto] = useState("");
 
@@ -113,10 +135,13 @@ export default function App() {
   // EFEITOS DE PERSISTÊNCIA
   // ==============================
 
-  // Salva salário sempre que ele mudar
+  // Salva pessoas sempre que a lista mudar
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS.salario, salario);
-  }, [salario]);
+    window.localStorage.setItem(
+      STORAGE_KEYS.pessoas,
+      JSON.stringify(pessoas)
+    );
+  }, [pessoas]);
 
   // Salva total de débito sempre que ele mudar
   useEffect(() => {
@@ -149,6 +174,100 @@ export default function App() {
       JSON.stringify(gastos)
     );
   }, [gastos]);
+
+  // ==============================
+  // FUNÇÕES DE PESSOAS
+  // ==============================
+
+  function limparFormularioPessoa() {
+    setNomePessoa("");
+    setSalarioPessoa("");
+    setPessoaEmEdicaoId(null);
+    setErroPessoa("");
+  }
+
+  function salvarPessoa() {
+    const nomeNormalizado = nomePessoa.trim();
+
+    if (!nomeNormalizado) {
+      setErroPessoa("Digite um nome para a pessoa.");
+      return;
+    }
+
+    if (!salarioPessoa) {
+      setErroPessoa("Digite um salário para a pessoa.");
+      return;
+    }
+
+    const salarioConvertido = paraNumero(salarioPessoa);
+
+    if (pessoaEmEdicaoId) {
+      setPessoas((pessoasAnteriores) =>
+        pessoasAnteriores.map((pessoa) =>
+          pessoa.id === pessoaEmEdicaoId
+            ? {
+                ...pessoa,
+                nome: nomeNormalizado,
+                salario: salarioConvertido,
+              }
+            : pessoa
+        )
+      );
+
+      limparFormularioPessoa();
+      return;
+    }
+
+    const novaPessoa = {
+      id: Date.now(),
+      nome: nomeNormalizado,
+      salario: salarioConvertido,
+    };
+
+    setPessoas([...pessoas, novaPessoa]);
+    limparFormularioPessoa();
+  }
+
+  function editarPessoa(pessoa) {
+    setNomePessoa(pessoa.nome);
+    setSalarioPessoa(String(pessoa.salario));
+    setPessoaEmEdicaoId(pessoa.id);
+    setErroPessoa("");
+  }
+
+  function excluirPessoa(idPessoa) {
+    // Remove a pessoa da lista
+    setPessoas((pessoasAnteriores) =>
+      pessoasAnteriores.filter((pessoa) => pessoa.id !== idPessoa)
+    );
+
+    // Remove gastos ligados à pessoa excluída
+    const gastosRestantes = gastos.filter((gasto) => gasto.pessoaId !== idPessoa);
+
+    setGastos(gastosRestantes);
+
+    // Recalcula totais com base nos gastos restantes
+    const novoTotalDebito = gastosRestantes
+      .filter((gasto) => gasto.tipo === "debito")
+      .reduce((acumulador, gasto) => acumulador + paraNumero(gasto.valor), 0);
+
+    const novoTotalCredito = gastosRestantes
+      .filter((gasto) => gasto.tipo === "credito")
+      .reduce((acumulador, gasto) => acumulador + paraNumero(gasto.valor), 0);
+
+    setGastoDebito(novoTotalDebito);
+    setFaturaAtual(novoTotalCredito);
+
+    // Se a pessoa excluída estiver selecionada no formulário de gasto, limpa
+    if (Number(pessoaSelecionada) === idPessoa) {
+      setPessoaSelecionada("");
+    }
+
+    // Se a pessoa excluída estiver em edição, limpa o formulário
+    if (pessoaEmEdicaoId === idPessoa) {
+      limparFormularioPessoa();
+    }
+  }
 
   // ==============================
   // FUNÇÃO: ADICIONAR CARTÃO
@@ -193,8 +312,30 @@ export default function App() {
   }
 
   // ==============================
-  // FUNÇÃO: ADICIONAR GASTO
+  // FUNÇÕES DE GASTOS
   // ==============================
+
+  function limparFormularioGasto() {
+    setNomeGasto("");
+    setValorGasto("");
+    setCartaoSelecionado("");
+    setPessoaSelecionada("");
+    setGastoEmEdicaoId(null);
+    setErroGasto("");
+  }
+
+  function recalcularTotais(listaDeGastos) {
+    const totalDebito = listaDeGastos
+      .filter((gasto) => gasto.tipo === "debito")
+      .reduce((acumulador, gasto) => acumulador + paraNumero(gasto.valor), 0);
+
+    const totalCredito = listaDeGastos
+      .filter((gasto) => gasto.tipo === "credito")
+      .reduce((acumulador, gasto) => acumulador + paraNumero(gasto.valor), 0);
+
+    setGastoDebito(totalDebito);
+    setFaturaAtual(totalCredito);
+  }
 
   function adicionarGasto() {
     const nomeNormalizado = nomeGasto.trim();
@@ -217,6 +358,12 @@ export default function App() {
       return;
     }
 
+    // Validação: pessoa obrigatória
+    if (!pessoaSelecionada) {
+      setErroGasto("Selecione a pessoa responsável pelo gasto.");
+      return;
+    }
+
     // Busca o cartão selecionado
     const cartao = cartoes.find(
       (cartaoExistente) => cartaoExistente.id === Number(cartaoSelecionado)
@@ -228,8 +375,41 @@ export default function App() {
       return;
     }
 
+    // Busca a pessoa selecionada
+    const pessoa = pessoas.find(
+      (pessoaExistente) => pessoaExistente.id === Number(pessoaSelecionada)
+    );
+
+    // Segurança extra
+    if (!pessoa) {
+      setErroGasto("Pessoa inválida.");
+      return;
+    }
+
     // Converte o valor para número seguro
     const valor = paraNumero(valorGasto);
+
+    // Se estiver editando, atualiza o gasto existente
+    if (gastoEmEdicaoId) {
+      const gastosAtualizados = gastos.map((gasto) =>
+        gasto.id === gastoEmEdicaoId
+          ? {
+              ...gasto,
+              nome: nomeNormalizado,
+              valor,
+              cartaoNome: cartao.nome,
+              tipo: cartao.tipo,
+              pessoaId: pessoa.id,
+              pessoaNome: pessoa.nome,
+            }
+          : gasto
+      );
+
+      setGastos(gastosAtualizados);
+      recalcularTotais(gastosAtualizados);
+      limparFormularioGasto();
+      return;
+    }
 
     // Cria o gasto
     const novoGasto = {
@@ -238,10 +418,14 @@ export default function App() {
       valor,
       cartaoNome: cartao.nome,
       tipo: cartao.tipo,
+      pessoaId: pessoa.id,
+      pessoaNome: pessoa.nome,
     };
 
+    const novaLista = [...gastos, novoGasto];
+
     // Salva na lista
-    setGastos([...gastos, novoGasto]);
+    setGastos(novaLista);
 
     // Atualiza os totais automáticos
     if (cartao.tipo === "debito") {
@@ -251,19 +435,47 @@ export default function App() {
     }
 
     // Limpa formulário e erro
-    setNomeGasto("");
-    setValorGasto("");
-    setCartaoSelecionado("");
+    limparFormularioGasto();
+  }
+
+  function editarGasto(gasto) {
+    const cartaoCorrespondente = cartoes.find(
+      (cartao) => cartao.nome === gasto.cartaoNome && cartao.tipo === gasto.tipo
+    );
+
+    setNomeGasto(gasto.nome);
+    setValorGasto(String(gasto.valor));
+    setCartaoSelecionado(cartaoCorrespondente ? String(cartaoCorrespondente.id) : "");
+    setPessoaSelecionada(String(gasto.pessoaId));
+    setGastoEmEdicaoId(gasto.id);
     setErroGasto("");
+  }
+
+  function excluirGasto(idGasto) {
+    const gastosRestantes = gastos.filter((gasto) => gasto.id !== idGasto);
+    setGastos(gastosRestantes);
+    recalcularTotais(gastosRestantes);
+
+    if (gastoEmEdicaoId === idGasto) {
+      limparFormularioGasto();
+    }
   }
 
   // ==============================
   // CÁLCULOS
   // ==============================
 
+  // Soma dos salários de todas as pessoas cadastradas
+  const salarioTotal = useMemo(() => {
+    return pessoas.reduce(
+      (acumulador, pessoa) => acumulador + paraNumero(pessoa.salario),
+      0
+    );
+  }, [pessoas]);
+
   // Calcula o saldo disponível
   const saldoDisponivel = calcularSaldoDisponivel(
-    paraNumero(salario),
+    paraNumero(salarioTotal),
     paraNumero(gastoDebito),
     paraNumero(faturaAtual)
   );
@@ -325,21 +537,74 @@ export default function App() {
 
         {/* LINHA SUPERIOR */}
         <div style={styles.topGrid}>
-          {/* CARD: USUÁRIO */}
+          {/* CARD: PESSOAS */}
           <div style={styles.card}>
             <div style={styles.cardHeader}>
-              <h2 style={styles.cardTitle}>Usuário</h2>
-              <span style={styles.cardChip}>Entrada</span>
+              <h2 style={styles.cardTitle}>Pessoas</h2>
+              <span style={styles.cardChip}>Rendas</span>
             </div>
 
-            <label style={styles.label}>Salário mensal</label>
+            <label style={styles.label}>Nome da pessoa</label>
+            <input
+              type="text"
+              value={nomePessoa}
+              onChange={(e) => setNomePessoa(e.target.value)}
+              style={styles.input}
+              placeholder="Ex.: Daniel"
+            />
+
+            <label style={styles.label}>Salário da pessoa</label>
             <input
               type="number"
-              value={salario}
-              onChange={(e) => setSalario(e.target.value)}
+              value={salarioPessoa}
+              onChange={(e) => setSalarioPessoa(e.target.value)}
               style={styles.input}
               placeholder="Ex.: 3500"
             />
+
+            <button onClick={salvarPessoa} style={styles.button}>
+              {pessoaEmEdicaoId ? "Salvar pessoa" : "Adicionar pessoa"}
+            </button>
+
+            {pessoaEmEdicaoId && (
+              <button onClick={limparFormularioPessoa} style={styles.buttonSecundario}>
+                Cancelar edição
+              </button>
+            )}
+
+            {erroPessoa && <p style={styles.erro}>{erroPessoa}</p>}
+
+            <ul style={styles.lista}>
+              {pessoas.map((pessoa) => (
+                <li key={pessoa.id} style={styles.itemListaColuna}>
+                  <div style={styles.itemLinhaSuperior}>
+                    <span style={styles.itemText}>
+                      {pessoa.nome} · R$ {pessoa.salario}
+                    </span>
+
+                    <span style={{ ...styles.badgeMini, ...styles.badgeSaldo }}>
+                      renda
+                    </span>
+                  </div>
+
+                  <div style={styles.actionRow}>
+                    <button
+                      onClick={() => editarPessoa(pessoa)}
+                      style={styles.actionButton}
+                    >
+                      Editar
+                    </button>
+
+                    <button
+                      onClick={() => excluirPessoa(pessoa.id)}
+                      style={styles.actionButtonDanger}
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
 
           {/* CARD: RESUMO */}
@@ -350,6 +615,13 @@ export default function App() {
             </div>
 
             <div style={styles.kpiStack}>
+              <div style={styles.kpiRow}>
+                <span style={styles.kpiLabel}>Salário total</span>
+                <span style={{ ...styles.kpiValue, ...styles.resumoSaldo }}>
+                  R$ {salarioTotal}
+                </span>
+              </div>
+
               <div style={styles.kpiRow}>
                 <span style={styles.kpiLabel}>Saldo disponível</span>
                 <span style={{ ...styles.kpiValue, ...styles.resumoSaldo }}>
@@ -495,6 +767,19 @@ export default function App() {
             />
 
             <select
+              value={pessoaSelecionada}
+              onChange={(e) => setPessoaSelecionada(e.target.value)}
+              style={styles.input}
+            >
+              <option value="">Selecione uma pessoa</option>
+              {pessoas.map((pessoa) => (
+                <option key={pessoa.id} value={pessoa.id}>
+                  {pessoa.nome}
+                </option>
+              ))}
+            </select>
+
+            <select
               value={cartaoSelecionado}
               onChange={(e) => setCartaoSelecionado(e.target.value)}
               style={styles.input}
@@ -508,28 +793,53 @@ export default function App() {
             </select>
 
             <button onClick={adicionarGasto} style={styles.button}>
-              Adicionar gasto
+              {gastoEmEdicaoId ? "Salvar gasto" : "Adicionar gasto"}
             </button>
+
+            {gastoEmEdicaoId && (
+              <button onClick={limparFormularioGasto} style={styles.buttonSecundario}>
+                Cancelar edição
+              </button>
+            )}
 
             {erroGasto && <p style={styles.erro}>{erroGasto}</p>}
 
             <ul style={styles.lista}>
               {gastos.map((gasto) => (
-                <li key={gasto.id} style={styles.itemLista}>
-                  <span style={styles.itemText}>
-                    {gasto.nome} · R$ {gasto.valor} · {gasto.cartaoNome}
-                  </span>
+                <li key={gasto.id} style={styles.itemListaColuna}>
+                  <div style={styles.itemLinhaSuperior}>
+                    <span style={styles.itemText}>
+                      {gasto.nome} · R$ {gasto.valor} · {gasto.cartaoNome} ·{" "}
+                      {gasto.pessoaNome}
+                    </span>
 
-                  <span
-                    style={{
-                      ...styles.badgeMini,
-                      ...(gasto.tipo === "debito"
-                        ? styles.badgeDebito
-                        : styles.badgeCredito),
-                    }}
-                  >
-                    {gasto.tipo}
-                  </span>
+                    <span
+                      style={{
+                        ...styles.badgeMini,
+                        ...(gasto.tipo === "debito"
+                          ? styles.badgeDebito
+                          : styles.badgeCredito),
+                      }}
+                    >
+                      {gasto.tipo}
+                    </span>
+                  </div>
+
+                  <div style={styles.actionRow}>
+                    <button
+                      onClick={() => editarGasto(gasto)}
+                      style={styles.actionButton}
+                    >
+                      Editar
+                    </button>
+
+                    <button
+                      onClick={() => excluirGasto(gasto.id)}
+                      style={styles.actionButtonDanger}
+                    >
+                      Excluir
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -552,7 +862,6 @@ const styles = {
     overflowX: "hidden",
   },
 
-  // Casca principal com cara de painel / hardware
   shell: {
     maxWidth: "1480px",
     margin: "0 auto",
@@ -674,7 +983,6 @@ const styles = {
     alignItems: "start",
   },
 
-  // Painéis internos lembrando equipamento / módulo
   card: {
     background:
       "linear-gradient(180deg, rgba(245,248,252,0.96) 0%, rgba(225,232,240,0.94) 100%)",
@@ -807,8 +1115,7 @@ const styles = {
   button: {
     width: "100%",
     padding: "13px",
-    background:
-      "linear-gradient(180deg, #48b9ff 0%, #2f87b7 100%)",
+    background: "linear-gradient(180deg, #48b9ff 0%, #2f87b7 100%)",
     color: "#ffffff",
     border: "none",
     borderRadius: "14px",
@@ -816,6 +1123,18 @@ const styles = {
     fontWeight: "700",
     marginTop: "4px",
     boxShadow: "0 8px 20px rgba(47, 135, 183, 0.22)",
+  },
+
+  buttonSecundario: {
+    width: "100%",
+    padding: "13px",
+    background: "rgba(17,24,39,0.08)",
+    color: "#203243",
+    border: "1px solid rgba(17,24,39,0.12)",
+    borderRadius: "14px",
+    cursor: "pointer",
+    fontWeight: "700",
+    marginTop: "8px",
   },
 
   erro: {
@@ -845,8 +1164,58 @@ const styles = {
     border: "1px solid rgba(0,0,0,0.04)",
   },
 
+  itemListaColuna: {
+    marginBottom: "12px",
+    color: "#425a70",
+    lineHeight: "1.45",
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+    padding: "10px 12px",
+    borderRadius: "14px",
+    background: "rgba(255,255,255,0.42)",
+    border: "1px solid rgba(0,0,0,0.04)",
+    listStyle: "none",
+  },
+
+  itemLinhaSuperior: {
+    width: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "10px",
+  },
+
   itemText: {
     flex: 1,
     minWidth: 0,
+  },
+
+  actionRow: {
+    width: "100%",
+    display: "flex",
+    gap: "8px",
+  },
+
+  actionButton: {
+    flex: 1,
+    padding: "9px 12px",
+    background: "rgba(72,185,255,0.12)",
+    color: "#204761",
+    border: "1px solid rgba(72,185,255,0.16)",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "700",
+  },
+
+  actionButtonDanger: {
+    flex: 1,
+    padding: "9px 12px",
+    background: "rgba(232,93,117,0.12)",
+    color: "#8a2334",
+    border: "1px solid rgba(232,93,117,0.16)",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "700",
   },
 };
