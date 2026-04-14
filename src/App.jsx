@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { calcularSaldoDisponivel, paraNumero } from "./utils/finance";
+import { paraNumero } from "./utils/finance";
 
 // ==============================
 // IMPORTS DO GRÁFICO
@@ -308,7 +308,6 @@ const [resetEtapa, setResetEtapa] = useState(
   const [valorGasto, setValorGasto] = useState("");
   const [cartaoSelecionado, setCartaoSelecionado] = useState("");
   const [pessoaSelecionada, setPessoaSelecionada] = useState("");
-  const [quemPagouSelecionado, setQuemPagouSelecionado] = useState("");
   const [gastoEmEdicaoId, setGastoEmEdicaoId] = useState(null);
   const [erroGasto, setErroGasto] = useState("");
   
@@ -432,12 +431,13 @@ useEffect(() => {
       return;
     }
 
-    const novaPessoa = {
-      id: Date.now(),
-      nome: nomeNormalizado,
-      salario: salarioConvertido,
-      tema: "cassette_neon",
-    };
+const novaPessoa = {
+  id: Date.now(),
+  nome: nomeNormalizado,
+  salario: salarioConvertido,
+  saldo: salarioConvertido,
+  tema: "cassette_neon",
+};
 
     setPessoas([...pessoas, novaPessoa]);
     limparFormularioPessoa();
@@ -539,7 +539,6 @@ useEffect(() => {
   // ==============================
 
   function limparFormularioGasto() {
-    setQuemPagouSelecionado("");
     setNomeGasto("");
     setValorGasto("");
     setCartaoSelecionado("");
@@ -583,10 +582,6 @@ useEffect(() => {
       setErroGasto("Selecione a pessoa responsável pelo gasto.");
       return;
     }
-    if (!quemPagouSelecionado) {
-  setErroGasto("Selecione quem pagou o gasto.");
-  return;
-}
 
     const cartao = cartoes.find(
       (cartaoExistente) => cartaoExistente.id === Number(cartaoSelecionado)
@@ -619,9 +614,6 @@ useEffect(() => {
   tipo: cartao.tipo,
   pessoaId: pessoa.id,
   pessoaNome: pessoa.nome,
-  quemPagouId: Number(quemPagouSelecionado),
-  quemPagouNome:
-    pessoas.find((p) => p.id === Number(quemPagouSelecionado))?.nome || "",
 }
           : gasto
       );
@@ -632,14 +624,10 @@ useEffect(() => {
       return;
     }
 
-const quemPagou = pessoas.find(
-  (p) => p.id === Number(quemPagouSelecionado)
-);
 
-if (!quemPagou) {
-  setErroGasto("Pessoa que pagou inválida.");
-  return;
-}
+    
+
+
 
 const novoGasto = {
   id: Date.now(),
@@ -649,8 +637,6 @@ const novoGasto = {
   tipo: cartao.tipo,
   pessoaId: pessoa.id,
   pessoaNome: pessoa.nome,
-  quemPagouId: quemPagou.id,
-  quemPagouNome: quemPagou.nome,
 };
 
     const novaLista = [...gastos, novoGasto];
@@ -663,6 +649,16 @@ const novoGasto = {
     }
 
     limparFormularioGasto();
+    // 🔥 desconta do saldo se for débito
+if (cartao.tipo === "debito") {
+  const pessoasAtualizadas = pessoas.map((p) =>
+    p.id === pessoa.id
+      ? { ...p, saldo: (p.saldo || 0) - valor }
+      : p
+  );
+
+  setPessoas(pessoasAtualizadas);
+}
   }
 
 function editarGasto(gasto) {
@@ -671,8 +667,6 @@ function editarGasto(gasto) {
       cartao.nome === gasto.cartaoNome &&
       cartao.tipo === gasto.tipo
   );
-
-  setQuemPagouSelecionado(String(gasto.quemPagouId || ""));
   setNomeGasto(gasto.nome);
   setValorGasto(
     Number(gasto.valor)
@@ -753,13 +747,29 @@ function adicionarConta() {
 }
 
 function marcarContaComoPaga(idConta) {
-  const contasAtualizadas = contas.map((conta) =>
-    conta.id === idConta
-      ? {
-          ...conta,
-          pago: true,
-        }
-      : conta
+  const conta = contas.find((c) => c.id === idConta);
+  if (!conta || conta.pago) return;
+
+  const pessoa = pessoas.find(
+    (p) => p.id === conta.quemPagouId
+  );
+
+  if (!pessoa) return;
+
+  // 🔥 desconta do saldo da pessoa
+  const pessoasAtualizadas = pessoas.map((p) =>
+    p.id === pessoa.id
+      ? { ...p, saldo: (p.saldo || 0) - paraNumero(conta.valor) }
+      : p
+  );
+
+  setPessoas(pessoasAtualizadas);
+
+  // marca como pago
+  const contasAtualizadas = contas.map((c) =>
+    c.id === idConta
+      ? { ...c, pago: true }
+      : c
   );
 
   setContas(contasAtualizadas);
@@ -864,15 +874,17 @@ const temaAtivo = useMemo(() => {
     return pessoaAtiva ? paraNumero(pessoaAtiva.salario) : 0;
   }, [ehHousehold, pessoaAtiva, pessoas]);
 
+  const saldoTotalPessoas = pessoas.reduce(
+  (acc, pessoa) => acc + (pessoa.saldo || 0),
+  0
+);
   const totalContasPendentes = contas
   .filter((conta) => !conta.pago)
   .reduce((acc, conta) => acc + paraNumero(conta.valor), 0);
 
-const saldoDisponivel = calcularSaldoDisponivel(
-  paraNumero(salarioTotalFiltrado),
-  paraNumero(gastoDebitoFiltrado),
-  paraNumero(faturaAtualFiltrada)
-) - totalContasPendentes;
+const saldoDisponivel =
+  saldoTotalPessoas -
+  totalContasPendentes;
 
   const dataGrafico = [
     { name: "Débito", value: paraNumero(gastoDebitoFiltrado) || 0 },
@@ -897,7 +909,6 @@ const saldoDisponivel = calcularSaldoDisponivel(
   }
   function limparTudo() {
   setPessoas([]);
-  setQuemPagouSelecionado("");
   setNomePessoa("");
   setSalarioPessoa("");
   setPessoaEmEdicaoId(null);
@@ -1599,7 +1610,7 @@ footer: {
                 <li key={pessoa.id} style={styles.itemListaColuna}>
                   <div style={styles.itemLinhaSuperior}>
                     <span style={styles.itemText}>
-                      {pessoa.nome} · {formatarMoeda(pessoa.salario)}
+                      {pessoa.nome} · {formatarMoeda(pessoa.salario)} · saldo: {formatarMoeda(pessoa.saldo || 0)}
                     </span>
 
                     <span style={{ ...styles.badgeMini, ...styles.badgeSaldo }}>
@@ -1790,18 +1801,7 @@ footer: {
                 </option>
               ))}
             </select>
-            <select
-  value={quemPagouSelecionado}
-  onChange={(e) => setQuemPagouSelecionado(e.target.value)}
-  style={styles.input}
->
-  <option value="">Quem pagou?</option>
-  {pessoas.map((pessoa) => (
-    <option key={pessoa.id} value={pessoa.id}>
-      {pessoa.nome}
-    </option>
-  ))}
-</select>
+
 
             <select
               value={cartaoSelecionado}
@@ -1823,8 +1823,7 @@ footer: {
     !nomeGasto ||
     !valorGasto ||
     !cartaoSelecionado ||
-    !pessoaSelecionada ||
-    !quemPagouSelecionado
+    !pessoaSelecionada
   }
 >
               {gastoEmEdicaoId ? "Salvar gasto" : "Adicionar gasto"}
@@ -1853,7 +1852,7 @@ footer: {
                 <li key={gasto.id} style={styles.itemListaColuna}>
                   <div style={styles.itemLinhaSuperior}>
                     <span style={styles.itemText}>
-{gasto.nome} · {formatarMoeda(gasto.valor)} · {gasto.cartaoNome} · {gasto.pessoaNome} · pago por {gasto.quemPagouNome}
+{gasto.nome} · {formatarMoeda(gasto.valor)} · {gasto.cartaoNome} · {gasto.pessoaNome}
                     </span>
 
                     <span
