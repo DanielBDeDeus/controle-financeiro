@@ -17,6 +17,7 @@ const STORAGE_KEYS = {
   gastos: "controle-financeiro:gastos",
   perfilAtivo: "controle-financeiro:perfil-ativo",
   resetEtapa: "controle-financeiro:reset-etapa",
+  contas: "controle-financeiro:contas",
 };
 
 // ==============================
@@ -310,6 +311,21 @@ const [resetEtapa, setResetEtapa] = useState(
   const [quemPagouSelecionado, setQuemPagouSelecionado] = useState("");
   const [gastoEmEdicaoId, setGastoEmEdicaoId] = useState(null);
   const [erroGasto, setErroGasto] = useState("");
+  
+
+  // ==============================
+  // STATES DE CONTAS (BOLETOS)
+  // ==============================
+
+  const [contas, setContas] = useState(() =>
+    lerJsonStorage(STORAGE_KEYS.contas, [])
+  );
+
+  const [nomeConta, setNomeConta] = useState("");
+  const [valorConta, setValorConta] = useState("");
+  const [dataConta, setDataConta] = useState("");
+  const [erroConta, setErroConta] = useState("");
+  const [quemPagouConta, setQuemPagouConta] = useState("");
 
   // ==============================
   // EFEITOS DE PERSISTÊNCIA
@@ -365,6 +381,13 @@ useEffect(() => {
     String(resetEtapa)
   );
 }, [resetEtapa]);
+
+useEffect(() => {
+  window.localStorage.setItem(
+    STORAGE_KEYS.contas,
+    JSON.stringify(contas)
+  );
+}, [contas]);
 
   // ==============================
   // FUNÇÕES DE PESSOAS
@@ -677,6 +700,72 @@ function editarGasto(gasto) {
   }
 
   // ==============================
+// FUNÇÕES DE CONTAS
+// ==============================
+
+function adicionarConta() {
+  if (!nomeConta.trim()) {
+    setErroConta("Digite o nome da conta.");
+    return;
+  }
+
+  if (!valorConta) {
+    setErroConta("Digite o valor.");
+    return;
+  }
+
+  if (!dataConta) {
+    setErroConta("Selecione a data.");
+    return;
+  }
+
+  if (!quemPagouConta) {
+    setErroConta("Selecione quem vai pagar.");
+    return;
+  }
+
+  const pessoa = pessoas.find(
+    (p) => p.id === Number(quemPagouConta)
+  );
+
+  if (!pessoa) {
+    setErroConta("Pessoa inválida.");
+    return;
+  }
+
+  const novaConta = {
+    id: Date.now(),
+    nome: nomeConta.trim(),
+    valor: paraNumero(valorConta),
+    dataVencimento: dataConta,
+    pago: false,
+    quemPagouId: pessoa.id,
+    quemPagouNome: pessoa.nome,
+  };
+
+  setContas([...contas, novaConta]);
+
+  setNomeConta("");
+  setValorConta("");
+  setDataConta("");
+  setQuemPagouConta("");
+  setErroConta("");
+}
+
+function marcarContaComoPaga(idConta) {
+  const contasAtualizadas = contas.map((conta) =>
+    conta.id === idConta
+      ? {
+          ...conta,
+          pago: true,
+        }
+      : conta
+  );
+
+  setContas(contasAtualizadas);
+}
+
+  // ==============================
   // CÁLCULOS DE PERFIL ATIVO
   // ==============================
 
@@ -775,11 +864,15 @@ const temaAtivo = useMemo(() => {
     return pessoaAtiva ? paraNumero(pessoaAtiva.salario) : 0;
   }, [ehHousehold, pessoaAtiva, pessoas]);
 
-  const saldoDisponivel = calcularSaldoDisponivel(
-    paraNumero(salarioTotalFiltrado),
-    paraNumero(gastoDebitoFiltrado),
-    paraNumero(faturaAtualFiltrada)
-  );
+  const totalContasPendentes = contas
+  .filter((conta) => !conta.pago)
+  .reduce((acc, conta) => acc + paraNumero(conta.valor), 0);
+
+const saldoDisponivel = calcularSaldoDisponivel(
+  paraNumero(salarioTotalFiltrado),
+  paraNumero(gastoDebitoFiltrado),
+  paraNumero(faturaAtualFiltrada)
+) - totalContasPendentes;
 
   const dataGrafico = [
     { name: "Débito", value: paraNumero(gastoDebitoFiltrado) || 0 },
@@ -973,7 +1066,7 @@ topGrid: {
 },
 bottomGrid: {
   display: "grid",
-  gridTemplateColumns: "1fr 1fr", // 2 colunas
+  gridTemplateColumns: "1fr 1fr 1fr", // 2 colunas
   gap: "18px",
   alignItems: "start",
   marginBottom: "18px",
@@ -1572,6 +1665,13 @@ footer: {
               </div>
 
               <div style={styles.kpiRow}>
+  <span style={styles.kpiLabel}>Contas pendentes</span>
+  <span style={{ ...styles.kpiValue, ...styles.resumoDebito }}>
+    {formatarMoeda(totalContasPendentes)}
+  </span>
+</div>
+
+              <div style={styles.kpiRow}>
                 <span style={styles.kpiLabel}>Saída imediata</span>
                 <span style={{ ...styles.kpiValue, ...styles.resumoDebito }}>
                   {formatarMoeda(gastoDebitoFiltrado)}
@@ -1773,45 +1873,128 @@ footer: {
                       onClick={() => editarGasto(gasto)}
                       style={styles.actionButton}
                     >
-                      Editar
-                    </button>
+                    Editar
+                  </button>
 
-                    <button
-                      onClick={() => excluirGasto(gasto.id)}
-                      style={styles.actionButtonDanger}
-                    >
-                      Excluir
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => excluirGasto(gasto.id)}
+                    style={styles.actionButtonDanger}
+                  >
+                    Excluir
+                  </button>
+                </div>
+              </li>
+            ))
+            )}
+          </ul>
+        </div>
+
+        {/* ===================== CONTAS ===================== */}
+        <div style={styles.card}>
+          <div style={styles.cardHeader}>
+            <h2 style={styles.cardTitle}>Contas</h2>
+            <span style={styles.cardChip}>Boletos</span>
+          </div>
+
+          <input
+            placeholder="Nome da conta"
+            value={nomeConta}
+            onChange={(e) => setNomeConta(e.target.value)}
+            style={styles.input}
+          />
+
+          <input
+            placeholder="Valor"
+            value={valorConta}
+            onChange={(e) =>
+              setValorConta(e.target.value.replace(/[^\d,]/g, ""))
+            }
+            style={styles.input}
+          />
+
+          <input
+            type="date"
+            value={dataConta}
+            onChange={(e) => setDataConta(e.target.value)}
+            style={styles.input}
+          />
+          <select
+  value={quemPagouConta}
+  onChange={(e) => setQuemPagouConta(e.target.value)}
+  style={styles.input}
+>
+  <option value="">Quem vai pagar?</option>
+  {pessoas.map((pessoa) => (
+    <option key={pessoa.id} value={pessoa.id}>
+      {pessoa.nome}
+    </option>
+  ))}
+</select>
+
+          <button
+  onClick={adicionarConta}
+  disabled={!nomeConta || !valorConta || !dataConta || !quemPagouConta}
+  style={styles.button}
+>
+            Adicionar conta
+          </button>
+
+          <ul style={styles.lista}>
+            {contas.length === 0 ? (
+              <li style={styles.itemLista}>
+                <span style={styles.textoAuxiliar}>
+                  Nenhuma conta cadastrada.
+                </span>
+              </li>
+            ) : (
+              contas.map((conta) => (
+                <li key={conta.id} style={styles.itemLista}>
+                  <span>
+                    {conta.nome} · {formatarMoeda(conta.valor)} · vence {conta.dataVencimento}
+                  </span>
+
+{!conta.pago && (
+  <button
+    onClick={() => marcarContaComoPaga(conta.id)}
+    style={styles.actionButton}
+  >
+    Pagar
+  </button>
+)}
+
+{conta.pago && (
+  <span>Pago por: {conta.quemPagouNome}</span>
+)}
                 </li>
               ))
-              )}
-            </ul>
-          </div>
+            )}
+          </ul>
         </div>
       </div>
-
-
-      
+</div>
+      {/* ===================== FOOTER ===================== */}
       <div style={styles.footer}>
-  <div style={styles.resetBox}>
-    <p style={styles.resetTitle}>☢ Zona de risco</p>
-    <p style={styles.resetText}>
-      Isso apagará todos os dados do sistema. Use apenas em último caso.
-    </p>
+        <div style={styles.resetBox}>
+          <p style={styles.resetTitle}>☢ Zona de risco</p>
+          <p style={styles.resetText}>
+            Isso apagará todos os dados do sistema. Use apenas em último caso.
+          </p>
 
-    <button onClick={lidarComResetTotal} style={styles.resetButton}>
-      ☢ {RESET_MESSAGES[resetEtapa] ?? RESET_MESSAGES[2]}
-    </button>
+          <button
+            onClick={lidarComResetTotal}
+            style={styles.resetButton}
+          >
+            ☢ {RESET_MESSAGES[resetEtapa] ?? RESET_MESSAGES[2]}
+          </button>
 
-    {resetEtapa > 0 && (
-      <button
-        onClick={() => setResetEtapa(0)}
-        style={styles.buttonSecundario}
-      >
-        Cancelar
-      </button>
-    )}
+          {resetEtapa > 0 && (
+            <button
+              onClick={() => setResetEtapa(0)}
+              style={styles.buttonSecundario}
+            >
+              Cancelar
+            </button>
+          )}
         </div>
       </div>
     </div>
