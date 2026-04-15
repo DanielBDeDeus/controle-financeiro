@@ -34,6 +34,7 @@ const STORAGE_KEYS = {
   gastos: "controle-financeiro:gastos",
   perfilAtivo: "controle-financeiro:perfil-ativo",
   resetEtapa: "controle-financeiro:reset-etapa",
+  transacoes: "controle-financeiro:transacoes",
   contas: "controle-financeiro:contas",
 };
 
@@ -379,7 +380,17 @@ const RESET_MESSAGES = [
 // ║ - Cálculos derivados                         ║
 // ║ - Renderização do dashboard                  ║
 // ╚══════════════════════════════════════════════╝
-function Dashboard({ pessoas, setPessoas, contas, setContas, temaAtivo, perfilAtivo, setPerfilAtivo }) {
+function Dashboard({
+  pessoas,
+  setPessoas,
+  contas,
+  setContas,
+  transacoes,
+  setTransacoes,
+  temaAtivo,
+  perfilAtivo,
+  setPerfilAtivo
+}) {
 const navigate = useNavigate();
 // ╔══════════════════════════════════════════════╗
 // ║        DEFINIÇÃO DO PERFIL ATIVO             ║
@@ -2673,6 +2684,9 @@ export default function App() {
   const [contas, setContas] = useState(() =>
   lerJsonStorage(STORAGE_KEYS.contas, [])
 );
+const [transacoes, setTransacoes] = useState(() =>
+  lerJsonStorage(STORAGE_KEYS.transacoes, [])
+);
 
 // ╔══════════════════════════════════════════════╗
 // ║        TEMA + PERFIL GLOBAL                  ║
@@ -2760,6 +2774,12 @@ useEffect(() => {
     JSON.stringify(contas)
   );
 }, [contas]);
+useEffect(() => {
+  window.localStorage.setItem(
+    STORAGE_KEYS.transacoes,
+    JSON.stringify(transacoes)
+  );
+}, [transacoes]);
   return (
 <BrowserRouter>
   <Routes>
@@ -2772,6 +2792,8 @@ useEffect(() => {
   setPessoas={setPessoas}
   contas={contas}
   setContas={setContas}
+  transacoes={transacoes}
+  setTransacoes={setTransacoes}
   temaAtivo={temaAtivo}
   perfilAtivo={perfilAtivo}
   setPerfilAtivo={setPerfilAtivo}
