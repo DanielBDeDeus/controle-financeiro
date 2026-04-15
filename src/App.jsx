@@ -456,6 +456,7 @@ const [layout, setLayout] = useState([
   const [nomeCartao, setNomeCartao] = useState("");
   const [tipoCartao, setTipoCartao] = useState("credito");
   const [diaFechamento, setDiaFechamento] = useState("");
+  const [diaVencimento, setDiaVencimento] = useState("");
   const [erroCartao, setErroCartao] = useState("");
   const [limiteCartao, setLimiteCartao] = useState("");
   const [limiteUsado, setLimiteUsado] = useState("");
@@ -487,7 +488,7 @@ const [layout, setLayout] = useState([
 // ╠══════════════════════════════════════════════╣
 // ║ Log de entradas/saídas manuais de saldo      ║
 // ╚══════════════════════════════════════════════╝
-  const [movimentacoes, setMovimentacoes] = useState([]);
+  
   const [valorSaldoInput, setValorSaldoInput] = useState("");
   const [comentarioSaldo, setComentarioSaldo] = useState("");
   const [pessoaSaldoSelecionada, setPessoaSaldoSelecionada] = useState(null);
@@ -676,16 +677,22 @@ function alterarSaldoPessoa(idPessoa, valor, comentario = "") {
   // ╔══════════════════════════════════════════════╗
   // ║            LOG DE AUDITORIA (INTERNO)        ║
   // ╚══════════════════════════════════════════════╝
-  const novaMovimentacao = {
-    id: Date.now(),
-    pessoaId: idPessoa,
-    valor: numero,
-    comentario,
-    data: new Date().toISOString(),
-  };
+const novaTransacao = {
+  id: Date.now(),
+  tipo: numero < 0 ? "debito" : "entrada",
+  origem: "ajuste_manual",
+  nome: comentario || "Ajuste manual de saldo",
+  valor: Math.abs(numero),
+  pessoaId: pessoa.id,
+  pessoaNome: pessoa.nome,
+  cartaoNome: null,
+  data: new Date().toISOString(),
+  observacao: comentario || "",
+};
 
-  setMovimentacoes((prev) => [novaMovimentacao, ...prev]);
+setTransacoes((prev) => [novaTransacao, ...prev]);
 }
+
 
 // ╔══════════════════════════════════════════════╗
 // ║            FUNÇÃO: ADICIONAR CARTÃO          ║
@@ -700,6 +707,10 @@ function alterarSaldoPessoa(idPessoa, valor, comentario = "") {
     }
 if (tipoCartao === "credito" && !diaFechamento) {
   setErroCartao("Informe o dia de fechamento.");
+  return;
+}
+if (tipoCartao === "credito" && !diaVencimento) {
+  setErroCartao("Informe o dia de vencimento.");
   return;
 }
 if (tipoCartao === "credito" && !limiteCartao) {
@@ -722,7 +733,10 @@ if (tipoCartao === "credito" && !limiteCartao) {
   nome: nomeCartao.trim(),
   tipo: tipoCartao,
   diaFechamento:
-    tipoCartao === "credito" ? Number(diaFechamento) : null,
+  tipoCartao === "credito" ? Number(diaFechamento) : null,
+
+diaVencimento:
+  tipoCartao === "credito" ? Number(diaVencimento) : null,
 
   limite:
     tipoCartao === "credito"
@@ -739,6 +753,7 @@ if (tipoCartao === "credito" && !limiteCartao) {
     setNomeCartao("");
     setErroCartao("");
     setDiaFechamento("");
+    setDiaVencimento("");
     setLimiteCartao("");
     setLimiteUsado("");
   }
@@ -953,6 +968,21 @@ function excluirCartao(idCartao) {
     pessoaNome: pessoa.nome,
   };
 
+  const novaTransacao = {
+  id: Date.now() + 1,
+  tipo: cartao.tipo,
+  origem: "gasto",
+  nome: nomeNormalizado,
+  valor,
+  pessoaId: pessoa.id,
+  pessoaNome: pessoa.nome,
+  cartaoNome: cartao.nome,
+  data: new Date().toISOString(),
+  observacao: "",
+};
+
+setTransacoes((prev) => [novaTransacao, ...prev]);
+
   const novaLista = [...gastos, novoGasto];
   setGastos(novaLista);
 
@@ -1079,6 +1109,9 @@ function adicionarConta() {
   setErroConta("");
 }
 
+// ╔══════════════════════════════════════════════╗
+// ║     MARCAR CONTA COMO PAGA                  ║
+// ╚══════════════════════════════════════════════╝
 function marcarContaComoPaga(idConta) {
   const conta = contas.find((c) => c.id === idConta);
   if (!conta || conta.pago) return;
@@ -1089,9 +1122,9 @@ function marcarContaComoPaga(idConta) {
 
   if (!pessoa) return;
 
-// ╔══════════════════════════════════════════════╗
-// ║     DESCONTA DO SALDO DA PESSOA              ║
-// ╚══════════════════════════════════════════════╝
+  // ╔══════════════════════════════════════════════╗
+  // ║     DESCONTA DO SALDO DA PESSOA              ║
+  // ╚══════════════════════════════════════════════╝
   const pessoasAtualizadas = pessoas.map((p) =>
     p.id === pessoa.id
       ? { ...p, saldo: (p.saldo || 0) - paraNumero(conta.valor) }
@@ -1100,9 +1133,9 @@ function marcarContaComoPaga(idConta) {
 
   setPessoas(pessoasAtualizadas);
 
-// ╔══════════════════════════════════════════════╗
-// ║             MARCAR COMO PAGO                 ║
-// ╚══════════════════════════════════════════════╝
+  // ╔══════════════════════════════════════════════╗
+  // ║             MARCAR COMO PAGO                 ║
+  // ╚══════════════════════════════════════════════╝
   const contasAtualizadas = contas.map((c) =>
     c.id === idConta
       ? { ...c, pago: true }
@@ -1110,12 +1143,28 @@ function marcarContaComoPaga(idConta) {
   );
 
   setContas(contasAtualizadas);
+
+  // ╔══════════════════════════════════════════════╗
+  // ║        REGISTRO NO LEDGER (CONTA PAGA)       ║
+  // ╚══════════════════════════════════════════════╝
+  const novaTransacao = {
+    id: Date.now(),
+    tipo: "conta_paga",
+    origem: "boleto",
+    nome: conta.nome,
+    valor: paraNumero(conta.valor),
+    pessoaId: pessoa.id,
+    pessoaNome: pessoa.nome,
+    cartaoNome: null,
+    data: new Date().toISOString(),
+    observacao: "Pagamento de conta",
+  };
+
+  setTransacoes((prev) => [novaTransacao, ...prev]);
 }
+
 // ╔══════════════════════════════════════════════╗
 // ║          FUNÇÃO: EXCLUIR CONTA               ║
-// ╠══════════════════════════════════════════════╣
-// ║ Remove uma conta (boleto) do sistema         ║
-// ║ sem afetar diretamente o saldo               ║
 // ╚══════════════════════════════════════════════╝
 function excluirConta(idConta) {
   setContas(contas.filter(c => c.id !== idConta));
@@ -1249,8 +1298,6 @@ const dataGrafico = [
   { name: "Entradas", value: totalEntradas || 0 },
   { name: "Contas pagas", value: totalContasPagas || 0 },
 ];
-
-console.log("PESSOAS:", pessoas);
 
 const dadosSaldoPessoas = pessoas.map((p) => {
   const saldo = p.saldo || 0;
@@ -1486,13 +1533,14 @@ card: {
   background: temaAtivo.cardBg,
   border: `1px solid ${temaAtivo.cardBorder}`,
   borderRadius: "22px",
-  padding: "18px",
+  padding: "0",
   minWidth: "320px",
   maxWidth: "100%",
   color: temaAtivo.cardText,
+  overflow: "hidden",
+  position: "relative",
   boxShadow:
-    "0 12px 28px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
-
+    "0 18px 38px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.88)",
 },
 
       cardGrafico: {
@@ -1507,33 +1555,50 @@ card: {
 },
 
       cardHeader: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        gap: "12px",
-        marginBottom: "14px",
-      },
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: "12px",
+  marginBottom: 0,
+  padding: "16px 18px 14px 18px",
+  borderBottom: `1px solid ${temaAtivo.kpiBorder}`,
+  background:
+    "linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.08) 100%)",
+  boxShadow: "inset 0 -1px 0 rgba(255,255,255,0.25)",
+},
 
       cardTitle: {
-        margin: 0,
-        color: temaAtivo.cardTitle,
-        fontSize: "28px",
-        fontWeight: "700",
-        letterSpacing: "-0.4px",
-      },
+  margin: 0,
+  color: temaAtivo.cardTitle,
+  fontSize: "18px",
+  fontWeight: "800",
+  letterSpacing: "-0.2px",
+  display: "flex",
+  alignItems: "center",
+  gap: "8px",
+  textTransform: "none",
+},
+icon: {
+  fontSize: 22,
+  verticalAlign: "middle",
+  marginRight: 8,
+  opacity: 0.95,
+  filter: "drop-shadow(0 0 4px rgba(0,0,0,0.2))",
+},
 
       cardChip: {
-        fontSize: "11px",
-        fontWeight: "700",
-        letterSpacing: "0.8px",
-        textTransform: "uppercase",
-        color: temaAtivo.chipText,
-        background: temaAtivo.chipBg,
-        border: `1px solid ${temaAtivo.chipBorder}`,
-        padding: "6px 10px",
-        borderRadius: "999px",
-        whiteSpace: "nowrap",
-      },
+  fontSize: "10px",
+  fontWeight: "800",
+  letterSpacing: "1px",
+  textTransform: "uppercase",
+  color: temaAtivo.chipText,
+  background: temaAtivo.chipBg,
+  border: `1px solid ${temaAtivo.chipBorder}`,
+  padding: "5px 10px",
+  borderRadius: "999px",
+  whiteSpace: "nowrap",
+  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.35)",
+},
 
       label: {
         color: temaAtivo.cardText,
@@ -1544,9 +1609,10 @@ card: {
       },
 
       kpiStack: {
-        display: "grid",
-        gap: "12px",
-      },
+  display: "grid",
+  gap: "12px",
+  padding: "16px 18px 18px 18px",
+},
 
       kpiRow: {
         display: "flex",
@@ -1583,12 +1649,12 @@ card: {
       },
 
       textoAuxiliar: {
-        fontSize: "14px",
-        color: temaAtivo.subtitle,
-        lineHeight: "1.5",
-        margin: 0,
-        maxWidth: "260px",
-      },
+  fontSize: "13px",
+  color: temaAtivo.subtitle,
+  lineHeight: "1.55",
+  margin: 0,
+  maxWidth: "320px",
+},
 
       placeholderGrafico: {
         minHeight: "240px",
@@ -1607,43 +1673,48 @@ card: {
   paddingTop: "8px",
 },
 
-      input: {
-        width: "100%",
-        padding: "13px 14px",
-        margin: "10px 0",
-        borderRadius: "14px",
-        border: `1px solid ${temaAtivo.inputBorder}`,
-        boxSizing: "border-box",
-        background: temaAtivo.inputBg,
-        color: temaAtivo.inputText,
-        outline: "none",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
-      },
+   input: {
+  width: "100%",
+  padding: "13px 14px",
+  margin: "10px 0",
+  borderRadius: "12px",
+  border: `1px solid ${temaAtivo.inputBorder}`,
+  boxSizing: "border-box",
+  background: temaAtivo.inputBg,
+  color: temaAtivo.inputText,
+  outline: "none",
+  boxShadow:
+    "inset 0 1px 0 rgba(255,255,255,0.04), inset 0 -1px 0 rgba(0,0,0,0.18)",
+},
 
       button: {
-        width: "100%",
-        padding: "13px",
-        background: temaAtivo.buttonBg,
-        color: "#ffffff",
-        border: "none",
-        borderRadius: "14px",
-        cursor: "pointer",
-        fontWeight: "700",
-        marginTop: "4px",
-        boxShadow: temaAtivo.buttonShadow,
-      },
+  width: "100%",
+  padding: "13px",
+  background: temaAtivo.buttonBg,
+  color: "#ffffff",
+  border: "1px solid rgba(255,255,255,0.12)",
+  borderRadius: "12px",
+  cursor: "pointer",
+  fontWeight: "800",
+  marginTop: "4px",
+  boxShadow:
+    `${temaAtivo.buttonShadow}, inset 0 1px 0 rgba(255,255,255,0.25)`,
+  transition: "transform 0.14s ease, box-shadow 0.14s ease, opacity 0.14s ease",
+},
 
       buttonSecundario: {
-        width: "100%",
-        padding: "13px",
-        background: temaAtivo.buttonSecondaryBg,
-        color: temaAtivo.buttonSecondaryText,
-        border: `1px solid ${temaAtivo.buttonSecondaryBorder}`,
-        borderRadius: "14px",
-        cursor: "pointer",
-        fontWeight: "700",
-        marginTop: "8px",
-      },
+  width: "100%",
+  padding: "13px",
+  background: temaAtivo.buttonSecondaryBg,
+  color: temaAtivo.buttonSecondaryText,
+  border: `1px solid ${temaAtivo.buttonSecondaryBorder}`,
+  borderRadius: "12px",
+  cursor: "pointer",
+  fontWeight: "800",
+  marginTop: "8px",
+  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18)",
+  transition: "transform 0.14s ease, box-shadow 0.14s ease, opacity 0.14s ease",
+},
 
       erro: {
         color: "#c1121f",
@@ -1886,11 +1957,16 @@ function salarioDisponivel(pessoa) {
         <div style={styles.topGrid}>
           <div style={styles.card}>
             <div style={styles.cardHeader}>
-              <h2 style={styles.cardTitle}>Visão ativa</h2>
+              <h2 style={styles.cardTitle}>
+  <span className="material-symbols-outlined" style={styles.icon}>
+    visibility
+  </span>
+  Modo de visualização
+</h2>
               <span style={styles.cardChip}>Perfil</span>
             </div>
 
-            <label style={styles.label}>Selecionar perfil</label>
+            <label style={styles.label}>Quem estamos visualizando?</label>
             <select
               value={perfilAtivo}
               onChange={(e) => setPerfilAtivo(e.target.value)}
@@ -1946,7 +2022,12 @@ function salarioDisponivel(pessoa) {
 
           <div style={styles.card}>
             <div style={styles.cardHeader}>
-              <h2 style={styles.cardTitle}>Leitura da visão</h2>
+              <h2 style={styles.cardTitle}>
+  <span className="material-symbols-outlined" style={styles.icon}>
+    filter_alt
+  </span>
+  Resumo da seleção
+</h2>
               <span style={styles.cardChip}>Filtro</span>
             </div>
 
@@ -1975,7 +2056,12 @@ function salarioDisponivel(pessoa) {
 
           <div style={{ ...styles.card, ...styles.cardGrafico, gridColumn: "span 1" }}>
             <div style={styles.cardHeader}>
-              <h2 style={styles.cardTitle}>Distribuição</h2>
+              <h2 style={styles.cardTitle}>
+  <span className="material-symbols-outlined" style={styles.icon}>
+    bar_chart
+  </span>
+  Visão geral financeira
+</h2>
               <span style={styles.cardChip}>Visual</span>
             </div>
 
@@ -2066,7 +2152,12 @@ function salarioDisponivel(pessoa) {
 <div style={styles.bottomGrid}>
   <div style={{ ...styles.card, gridColumn: "span 1", minHeight: 520 }}>
   <div style={styles.cardHeader}>
-    <h2 style={styles.cardTitle}>Saldo por pessoa</h2>
+    <h2 style={styles.cardTitle}>
+  <span className="material-symbols-outlined" style={styles.icon}>
+    group
+  </span>
+  Saldo individual
+</h2>
     <span style={styles.cardChip}>Financeiro</span>
   </div>
 
@@ -2177,7 +2268,12 @@ function salarioDisponivel(pessoa) {
 </div>
           <div style={{ ...styles.card, position: "sticky", top: "20px" }}>
             <div style={styles.cardHeader}>
-              <h2 style={styles.cardTitle}>Resumo</h2>
+              <h2 style={styles.cardTitle}>
+  <span className="material-symbols-outlined" style={styles.icon}>
+    analytics
+  </span>
+  Resumo financeiro
+</h2>
               <span style={styles.cardChip}>Leitura</span>
             </div>
 
@@ -2223,14 +2319,21 @@ function salarioDisponivel(pessoa) {
         </div>
         <div style={styles.bottomGridFull}>
           <div style={styles.card}>
-            <div style={styles.cardHeader}>
-              {/* ╔══════════════════════════════════════════════╗
-                  ║               LINHA INFERIOR                 ║
-                  ╚══════════════════════════════════════════════╝ */}
+  <div style={styles.cardHeader}>
+    {/* ╔══════════════════════════════════════════════╗
+        ║               LINHA INFERIOR                 ║
+        ╚══════════════════════════════════════════════╝ */}
 
-              <h2 style={styles.cardTitle}>Cartões</h2>
-              <span style={styles.cardChip}>Cadastro</span>
-            </div>
+    <h2 style={styles.cardTitle}>
+      <span className="material-symbols-outlined" style={styles.icon}>
+        credit_card
+      </span>
+      Cartões
+    </h2>
+    <span style={styles.cardChip}>Cadastro</span>
+  </div>
+
+  <div style={{ padding: "16px 18px 18px 18px" }}>
 
             <input
               placeholder="Nome do cartão"
@@ -2249,26 +2352,53 @@ function salarioDisponivel(pessoa) {
             </select>
             {tipoCartao === "credito" && (
   <>
-    <input
-      type="date"
-      value={
-        diaFechamento
-          ? `2024-01-${String(diaFechamento).padStart(2, "0")}`
-          : ""
+<div>
+  <label style={styles.label}>
+    <span className="material-symbols-outlined" style={{ fontSize: 16, marginRight: 6 }}>
+      calendar_month
+    </span>
+    Fechamento da fatura
+  </label>
+
+  <input
+    placeholder="dd/mm"
+    value={diaFechamento}
+    onChange={(e) => {
+      let v = e.target.value.replace(/\D/g, "");
+
+      if (v.length >= 3) {
+        v = v.slice(0, 2) + "/" + v.slice(2, 4);
       }
-      onChange={(e) => {
-        const date = e.target.value;
 
-        if (!date) {
-          setDiaFechamento("");
-          return;
-        }
+      setDiaFechamento(v.slice(0, 5));
+    }}
+    style={styles.input}
+  />
+</div>
 
-        const day = new Date(date).getDate();
-        setDiaFechamento(day);
-      }}
-      style={styles.input}
-    />
+<div>
+  <label style={styles.label}>
+    <span className="material-symbols-outlined" style={{ fontSize: 16, marginRight: 6 }}>
+      event
+    </span>
+    Vencimento da fatura
+  </label>
+
+  <input
+    placeholder="dd/mm"
+    value={diaVencimento}
+    onChange={(e) => {
+      let v = e.target.value.replace(/\D/g, "");
+
+      if (v.length >= 3) {
+        v = v.slice(0, 2) + "/" + v.slice(2, 4);
+      }
+
+      setDiaVencimento(v.slice(0, 5));
+    }}
+    style={styles.input}
+  />
+</div>
 
     <input
       placeholder="Limite total (ex: 5000)"
@@ -2334,7 +2464,7 @@ function salarioDisponivel(pessoa) {
       }),
     }}
   >
-    (fecha dia {cartao.diaFechamento})
+    (fecha dia {cartao.diaFechamento} • vence dia {cartao.diaVencimento})
   </span>
 )}
 </span>
@@ -2354,13 +2484,19 @@ function salarioDisponivel(pessoa) {
               )}
             </ul>
           </div>
+          </div>
 
           <div style={{ ...styles.card, position: "sticky", top: "20px" }}>
             <div style={styles.cardHeader}>
-              <h2 style={styles.cardTitle}>Gastos</h2>
+              <h2 style={styles.cardTitle}>
+  <span className="material-symbols-outlined" style={styles.icon}>
+    payments
+  </span>
+  Gastos
+</h2>
               <span style={styles.cardChip}>Registro</span>
             </div>
-
+<div style={{ padding: "16px 18px 18px 18px" }}>
             <input
               type="text"
               placeholder="Nome do gasto"
@@ -2498,16 +2634,21 @@ function salarioDisponivel(pessoa) {
             )}
           </ul>
         </div>
-
+</div>
         {/* ╔══════════════════════════════════════════════╗
             ║                   CONTAS                     ║
             ╚══════════════════════════════════════════════╝ */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>
-            <h2 style={styles.cardTitle}>Contas</h2>
+            <h2 style={styles.cardTitle}>
+  <span className="material-symbols-outlined" style={styles.icon}>
+    receipt_long
+  </span>
+  Contas
+</h2>
             <span style={styles.cardChip}>Boletos</span>
           </div>
-
+<div style={{ padding: "16px 18px 18px 18px" }}>
           <input
             placeholder="Nome da conta"
             value={nomeConta}
@@ -2524,12 +2665,28 @@ function salarioDisponivel(pessoa) {
             style={styles.input}
           />
 
-          <input
-            type="date"
-            value={dataConta}
-            onChange={(e) => setDataConta(e.target.value)}
-            style={styles.input}
-          />
+<div>
+  <label style={styles.label}>
+    <span className="material-symbols-outlined" style={{ fontSize: 16, marginRight: 6 }}>
+      receipt_long
+    </span>
+    Vencimento da conta
+  </label>
+
+  <input
+    placeholder="dd/mm/aaaa"
+    value={dataConta}
+    onChange={(e) => {
+      let v = e.target.value.replace(/\D/g, "");
+
+      if (v.length >= 3) v = v.slice(0, 2) + "/" + v.slice(2);
+      if (v.length >= 6) v = v.slice(0, 5) + "/" + v.slice(5);
+
+      setDataConta(v.slice(0, 10));
+    }}
+    style={styles.input}
+  />
+</div>
           <select
   value={quemPagouConta}
   onChange={(e) => setQuemPagouConta(e.target.value)}
@@ -2575,31 +2732,49 @@ style={{
   }),
 }}
 >
-<div style={{
-  display: "flex",
-  flexDirection: "column",
-  gap: 4,
-  flex: 1
-}}>
-  <span style={{ 
-  fontWeight: "700", 
-  fontSize: 14,
-  color: temaAtivo.cardTitle
-}}>
-  {conta.nome}
-</span>
+<div
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+    flex: 1,
+  }}
+>
+  {/* ╔══════════════════════════════════════════════╗
+      ║              NOME DA CONTA                 ║
+      ╚══════════════════════════════════════════════╝ */}
+  <span
+    style={{
+      fontWeight: "700",
+      fontSize: 14,
+      color: temaAtivo.cardTitle,
+    }}
+  >
+    {conta.nome}
+  </span>
 
+  {/* ╔══════════════════════════════════════════════╗
+      ║               VALOR DA CONTA                 ║
+      ╚══════════════════════════════════════════════╝ */}
   <span style={{ fontSize: 13, color: temaAtivo.cardText }}>
-    {formatarMoeda(conta.valor)}
+    💰 {formatarMoeda(conta.valor)}
   </span>
 
+  {/* ╔══════════════════════════════════════════════╗
+      ║           DATA DE VENCIMENTO (FIX)           ║
+      ╠══════════════════════════════════════════════╣
+      ║ Agora com label claro e ícone                ║
+      ╚══════════════════════════════════════════════╝ */}
   <span style={{ fontSize: 12, color: temaAtivo.subtitle }}>
-    vence {conta.dataVencimento}
+    📅 Vencimento: {new Date(conta.dataVencimento).toLocaleDateString("pt-BR")}
   </span>
 
+  {/* ╔══════════════════════════════════════════════╗
+      ║              STATUS DE ATRASO              ║
+      ╚══════════════════════════════════════════════╝ */}
   {isContaAtrasada(conta) && (
     <span style={{ color: "#ff4d4f", fontWeight: "bold" }}>
-      ATRASADO
+      ⚠ ATRASADO
     </span>
   )}
 </div>
@@ -2633,6 +2808,7 @@ style={{
               ))
             )}
           </ul>
+        </div>
         </div>
       </div>
 </div>
