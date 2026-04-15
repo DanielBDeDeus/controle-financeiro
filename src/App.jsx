@@ -236,6 +236,37 @@ function formatarMoeda(valor) {
   }).format(numeroSeguro);
 }
 
+function isContaAtrasada(conta) {
+  if (conta.pago) return false;
+
+  const hoje = new Date();
+  const vencimento = new Date(conta.dataVencimento);
+
+  hoje.setHours(0, 0, 0, 0);
+  vencimento.setHours(0, 0, 0, 0);
+
+  return vencimento < hoje;
+}
+
+function getContaUrgencia(conta) {
+  if (conta.pago) return "pago";
+
+  const hoje = new Date();
+  const vencimento = new Date(conta.dataVencimento);
+
+  hoje.setHours(0, 0, 0, 0);
+  vencimento.setHours(0, 0, 0, 0);
+
+  const diffDias = (vencimento - hoje) / (1000 * 60 * 60 * 24);
+
+  if (diffDias < 0) return "atrasado";
+  if (diffDias <= 1) return "critico";     // amanhã ou hoje
+  if (diffDias <= 3) return "alto";
+  if (diffDias <= 7) return "medio";
+
+  return "normal";
+}
+
 const RESET_MESSAGES = [
   "☢ Tem certeza que quer apagar tudo?",
   "☢ Isso vai apagar TODOS os dados salvos.",
@@ -561,105 +592,128 @@ const novaPessoa = {
   }
 
   function adicionarGasto() {
-    const nomeNormalizado = nomeGasto.trim();
+  const nomeNormalizado = nomeGasto.trim();
 
-    if (!nomeNormalizado) {
-      setErroGasto("Digite um nome para o gasto.");
-      return;
-    }
+  if (!nomeNormalizado) {
+    setErroGasto("Digite um nome para o gasto.");
+    return;
+  }
 
-    if (!valorGasto) {
-      setErroGasto("Digite um valor para o gasto.");
-      return;
-    }
+  if (!valorGasto) {
+    setErroGasto("Digite um valor para o gasto.");
+    return;
+  }
 
-    if (!cartaoSelecionado) {
-      setErroGasto("Selecione um cartão.");
-      return;
-    }
+  if (!cartaoSelecionado) {
+    setErroGasto("Selecione um cartão.");
+    return;
+  }
 
-    if (!pessoaSelecionada) {
-      setErroGasto("Selecione a pessoa responsável pelo gasto.");
-      return;
-    }
+  if (!pessoaSelecionada) {
+    setErroGasto("Selecione a pessoa responsável pelo gasto.");
+    return;
+  }
 
-    const cartao = cartoes.find(
-      (cartaoExistente) => cartaoExistente.id === Number(cartaoSelecionado)
-    );
-
-    if (!cartao) {
-      setErroGasto("Cartão inválido.");
-      return;
-    }
-
-    const pessoa = pessoas.find(
-      (pessoaExistente) => pessoaExistente.id === Number(pessoaSelecionada)
-    );
-
-    if (!pessoa) {
-      setErroGasto("Pessoa inválida.");
-      return;
-    }
-
-    const valor = paraNumero(valorGasto);
-
-    if (gastoEmEdicaoId) {
-      const gastosAtualizados = gastos.map((gasto) =>
-        gasto.id === gastoEmEdicaoId
-          ? {
-  ...gasto,
-  nome: nomeNormalizado,
-  valor,
-  cartaoNome: cartao.nome,
-  tipo: cartao.tipo,
-  pessoaId: pessoa.id,
-  pessoaNome: pessoa.nome,
-}
-          : gasto
-      );
-
-      setGastos(gastosAtualizados);
-      recalcularTotais(gastosAtualizados);
-      limparFormularioGasto();
-      return;
-    }
-
-
-    
-
-
-
-const novoGasto = {
-  id: Date.now(),
-  nome: nomeNormalizado,
-  valor,
-  cartaoNome: cartao.nome,
-  tipo: cartao.tipo,
-  pessoaId: pessoa.id,
-  pessoaNome: pessoa.nome,
-};
-
-    const novaLista = [...gastos, novoGasto];
-    setGastos(novaLista);
-
-    if (cartao.tipo === "debito") {
-      setGastoDebito((valorAnterior) => paraNumero(valorAnterior) + valor);
-    } else {
-      setFaturaAtual((valorAnterior) => paraNumero(valorAnterior) + valor);
-    }
-
-    limparFormularioGasto();
-    // 🔥 desconta do saldo se for débito
-if (cartao.tipo === "debito") {
-  const pessoasAtualizadas = pessoas.map((p) =>
-    p.id === pessoa.id
-      ? { ...p, saldo: (p.saldo || 0) - valor }
-      : p
+  const cartao = cartoes.find(
+    (c) => c.id === Number(cartaoSelecionado)
   );
 
-  setPessoas(pessoasAtualizadas);
-}
+  if (!cartao) {
+    setErroGasto("Cartão inválido.");
+    return;
   }
+
+  const pessoa = pessoas.find(
+    (p) => p.id === Number(pessoaSelecionada)
+  );
+
+  if (!pessoa) {
+    setErroGasto("Pessoa inválida.");
+    return;
+  }
+
+  const valor = paraNumero(valorGasto);
+
+  // =========================
+  // 🔥 EDIT MODE (FIXED)
+  // =========================
+  if (gastoEmEdicaoId) {
+    const gastoAntigo = gastos.find(g => g.id === gastoEmEdicaoId);
+
+    if (!gastoAntigo) return;
+
+    let pessoasAtualizadas = [...pessoas];
+
+    // 🔁 DEVOLVE valor antigo (se era débito)
+    if (gastoAntigo.tipo === "debito") {
+      pessoasAtualizadas = pessoasAtualizadas.map(p =>
+        p.id === gastoAntigo.pessoaId
+          ? { ...p, saldo: (p.saldo || 0) + paraNumero(gastoAntigo.valor) }
+          : p
+      );
+    }
+
+    // 🔥 SUBTRAI valor novo (se é débito)
+    if (cartao.tipo === "debito") {
+      pessoasAtualizadas = pessoasAtualizadas.map(p =>
+        p.id === pessoa.id
+          ? { ...p, saldo: (p.saldo || 0) - valor }
+          : p
+      );
+    }
+
+    setPessoas(pessoasAtualizadas);
+
+    const gastosAtualizados = gastos.map(g =>
+      g.id === gastoEmEdicaoId
+        ? {
+            ...g,
+            nome: nomeNormalizado,
+            valor,
+            cartaoNome: cartao.nome,
+            tipo: cartao.tipo,
+            pessoaId: pessoa.id,
+            pessoaNome: pessoa.nome,
+          }
+        : g
+    );
+
+    setGastos(gastosAtualizados);
+    recalcularTotais(gastosAtualizados);
+    limparFormularioGasto();
+    return;
+  }
+
+  // =========================
+  // 🔥 CREATE MODE
+  // =========================
+  const novoGasto = {
+    id: Date.now(),
+    nome: nomeNormalizado,
+    valor,
+    cartaoNome: cartao.nome,
+    tipo: cartao.tipo,
+    pessoaId: pessoa.id,
+    pessoaNome: pessoa.nome,
+  };
+
+  const novaLista = [...gastos, novoGasto];
+  setGastos(novaLista);
+
+  // 🔥 SUBTRAI DO SALDO (débito)
+  if (cartao.tipo === "debito") {
+    const pessoasAtualizadas = pessoas.map(p =>
+      p.id === pessoa.id
+        ? { ...p, saldo: (p.saldo || 0) - valor }
+        : p
+    );
+
+    setPessoas(pessoasAtualizadas);
+  }
+
+  recalcularTotais(novaLista);
+  limparFormularioGasto();
+}
 
 function editarGasto(gasto) {
   const cartaoCorrespondente = cartoes.find(
@@ -684,14 +738,31 @@ function editarGasto(gasto) {
 }
 
   function excluirGasto(idGasto) {
-    const gastosRestantes = gastos.filter((gasto) => gasto.id !== idGasto);
-    setGastos(gastosRestantes);
-    recalcularTotais(gastosRestantes);
+  const gasto = gastos.find(g => g.id === idGasto);
+  if (!gasto) return;
 
-    if (gastoEmEdicaoId === idGasto) {
-      limparFormularioGasto();
-    }
+  let pessoasAtualizadas = [...pessoas];
+
+  // 🔥 DEVOLVE saldo se era débito
+  if (gasto.tipo === "debito") {
+    pessoasAtualizadas = pessoasAtualizadas.map(p =>
+      p.id === gasto.pessoaId
+        ? { ...p, saldo: (p.saldo || 0) + paraNumero(gasto.valor) }
+        : p
+    );
   }
+
+  setPessoas(pessoasAtualizadas);
+
+  const gastosRestantes = gastos.filter(g => g.id !== idGasto);
+  setGastos(gastosRestantes);
+
+  recalcularTotais(gastosRestantes);
+
+  if (gastoEmEdicaoId === idGasto) {
+    limparFormularioGasto();
+  }
+}
 
   // ==============================
 // FUNÇÕES DE CONTAS
@@ -882,17 +953,31 @@ const temaAtivo = useMemo(() => {
   .filter((conta) => !conta.pago)
   .reduce((acc, conta) => acc + paraNumero(conta.valor), 0);
 
+ const contasOrdenadas = [...contas].sort((a, b) => {
+  // não pagas primeiro
+  if (a.pago !== b.pago) return a.pago ? 1 : -1;
+
+  // depois por data
+  return new Date(a.dataVencimento) - new Date(b.dataVencimento);
+});
+
 const saldoDisponivel =
   saldoTotalPessoas -
   totalContasPendentes;
 
-  const dataGrafico = [
-    { name: "Débito", value: paraNumero(gastoDebitoFiltrado) || 0 },
-    { name: "Crédito", value: paraNumero(faturaAtualFiltrada) || 0 },
-  ];
+const totalContasPagas = contas
+  .filter((c) => c.pago)
+  .reduce((acc, c) => acc + paraNumero(c.valor), 0);
 
-  const COLORS = ["#ff6b7a", "#ffb84d"];
-  const mostrarGrafico = gastosFiltrados.length > 0;
+const dataGrafico = [
+  { name: "Débito", value: paraNumero(gastoDebitoFiltrado) || 0 },
+  { name: "Crédito", value: paraNumero(faturaAtualFiltrada) || 0 },
+  { name: "Contas", value: totalContasPagas || 0 },
+];
+
+  const COLORS = ["#ff6b7a", "#ffb84d", "#4edbb0"];
+  const mostrarGrafico =
+  gastosFiltrados.length > 0 || totalContasPagas > 0;
 
   const nomeVisaoAtiva = ehHousehold
     ? "Household"
@@ -1946,10 +2031,48 @@ footer: {
                 </span>
               </li>
             ) : (
-              contas.map((conta) => (
-                <li key={conta.id} style={styles.itemLista}>
+              contasOrdenadas.map((conta) => (
+                <li
+  key={conta.id}
+style={{
+  ...styles.itemLista,
+  ...(getContaUrgencia(conta) === "medio"
+    ? {
+        border: "1px solid #ffb84d",
+        background: "rgba(255,184,77,0.08)",
+      }
+    : {}),
+  ...(getContaUrgencia(conta) === "alto"
+    ? {
+        border: "1px solid #ff6b7a",
+        background: "rgba(255,107,122,0.10)",
+      }
+    : {}),
+  ...(getContaUrgencia(conta) === "critico"
+    ? {
+        border: "2px solid #ff0000",
+        boxShadow: "0 0 12px rgba(255,0,0,0.6)",
+        animation: "shake 0.3s infinite",
+      }
+    : {}),
+  ...(getContaUrgencia(conta) === "atrasado"
+    ? {
+        border: "2px solid #ff0000",
+        background: "rgba(255,0,0,0.12)",
+      }
+    : {}),
+}}
+>
                   <span>
-                    {conta.nome} · {formatarMoeda(conta.valor)} · vence {conta.dataVencimento}
+                    <>
+  {conta.nome} · {formatarMoeda(conta.valor)} · vence {conta.dataVencimento}
+
+  {isContaAtrasada(conta) && (
+    <span style={{ color: "#ff4d4f", marginLeft: 8, fontWeight: "bold" }}>
+      ATRASADO
+    </span>
+  )}
+</>
                   </span>
 
 {!conta.pago && (
@@ -1962,7 +2085,9 @@ footer: {
 )}
 
 {conta.pago && (
-  <span>Pago por: {conta.quemPagouNome}</span>
+  <span style={{ color: "#2ecc71", fontWeight: "bold" }}>
+    ✔ Pago por {conta.quemPagouNome}
+  </span>
 )}
                 </li>
               ))
