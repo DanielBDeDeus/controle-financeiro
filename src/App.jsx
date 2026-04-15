@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { paraNumero } from "./utils/finance";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 // ╔══════════════════════════════════════════════╗
 // ║                  GRÁFICO                     ║
@@ -301,8 +302,8 @@ const RESET_MESSAGES = [
   "☢ Isso vai apagar TODOS os dados salvos.",
   "☢ ÚLTIMA CHANCE. Apagar tudo mesmo?",
 ];
+function Dashboard(props) {
 
-export default function App() {
 // ╔══════════════════════════════════════════════╗
 // ║        DEFINIÇÃO DO PERFIL ATIVO             ║
 // ╠══════════════════════════════════════════════╣
@@ -1615,8 +1616,7 @@ footer: {
     }),
     [temaAtivo]
   );
-
-  return (
+    return(
         <div style={styles.container}>
       <div style={styles.shell}>
         {/* ╔══════════════════════════════════════════════╗
@@ -2430,4 +2430,10 @@ style={{
       </div>
     </div>
   );
+
+ 
+
+}
+export default function App() {
+  return <Dashboard />;
 }
