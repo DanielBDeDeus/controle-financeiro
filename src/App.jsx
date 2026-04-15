@@ -646,7 +646,7 @@ function alterarSaldoPessoa(idPessoa, valor, comentario = "") {
     id: Date.now(),
     nome: comentario || "Ajuste manual de saldo",
     valor: Math.abs(numero),
-    tipo: numero < 0 ? "debito" : "credito",
+    tipo: numero < 0 ? "debito" : "entrada",
     cartaoNome: "Ajuste manual",
     pessoaId: pessoa.id,
     pessoaNome: pessoa.nome,
@@ -802,9 +802,16 @@ function excluirCartao(idCartao) {
     const totalCredito = listaDeGastos
       .filter((gasto) => gasto.tipo === "credito")
       .reduce((acumulador, gasto) => acumulador + paraNumero(gasto.valor), 0);
-
-    setGastoDebito(totalDebito);
-    setFaturaAtual(totalCredito);
+    // ╔══════════════════════════════════════════════╗
+    // ║              TOTAL DE ENTRADAS               ║
+    // ╚══════════════════════════════════════════════╝
+    const totalEntradas = listaDeGastos
+      .filter((gasto) => gasto.tipo === "entrada")
+      .reduce((acc, gasto) => acc + paraNumero(gasto.valor), 0);
+        setGastoDebito(totalDebito);
+        setFaturaAtual(totalCredito);
+        // ⚠ entradas não impactam fatura nem débito diretamente
+        // ficam disponíveis para analytics/graph
   }
 // ╔══════════════════════════════════════════════╗
 // ║        FLUXO PRINCIPAL DE GASTOS             ║
@@ -1220,10 +1227,15 @@ const totalSalario = pessoas.reduce((acc, p) => {
 // ║                                              ║
 // ║ ⚠ Ordem deve bater com array COLORS          ║
 // ╚══════════════════════════════════════════════╝
+const totalEntradas = gastosFiltrados
+  .filter((g) => g.tipo === "entrada")
+  .reduce((acc, g) => acc + paraNumero(g.valor), 0);
+
 const dataGrafico = [
   { name: "Salário", value: totalSalario },
   { name: "Débito", value: paraNumero(gastoDebitoFiltrado) || 0 },
   { name: "Crédito", value: paraNumero(faturaAtualFiltrada) || 0 },
+  { name: "Entradas", value: totalEntradas || 0 },
   { name: "Contas pagas", value: totalContasPagas || 0 },
 ];
 
@@ -1938,7 +1950,7 @@ function salarioDisponivel(pessoa) {
               <div style={styles.kpiRow}>
                 <span style={styles.kpiLabel}>Gastos visíveis</span>
                 <span style={{ ...styles.kpiValue, ...styles.resumoDebito }}>
-                  {gastosFiltrados.length}
+                  {gastosFiltrados.filter(g => g.tipo !== "entrada").length}
                 </span>
               </div>
             </div>
@@ -2445,11 +2457,13 @@ function salarioDisponivel(pessoa) {
                       style={{
                         ...styles.badgeMini,
                         ...(gasto.tipo === "debito"
-                          ? styles.badgeDebito
-                          : styles.badgeCredito),
+                              ? styles.badgeDebito
+                              : gasto.tipo === "credito"
+                              ? styles.badgeCredito
+                              : styles.badgeSaldo),
                       }}
                     >
-                      {gasto.tipo}
+                      {gasto.tipo === "entrada" ? "entrada (saldo)" : gasto.tipo}
                     </span>
                   </div>
 
