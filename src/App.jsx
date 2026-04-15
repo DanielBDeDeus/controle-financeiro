@@ -285,12 +285,35 @@ function formatarMoeda(valor) {
     maximumFractionDigits: 2,
   }).format(numeroSeguro);
 }
+// === DATE PARSER FIX START ===
+
+function parseDataBR(dataStr) {
+  if (!dataStr) return null;
+
+  const partes = dataStr.split("/");
+
+  if (partes.length === 2) {
+    // dd/mm → assume current year
+    const [dia, mes] = partes;
+    const ano = new Date().getFullYear();
+    return new Date(`${ano}-${mes}-${dia}`);
+  }
+
+  if (partes.length === 3) {
+    const [dia, mes, ano] = partes;
+    return new Date(`${ano}-${mes}-${dia}`);
+  }
+
+  return null;
+}
+
+// === DATE PARSER FIX END ===
 
 function isContaAtrasada(conta) {
   if (conta.pago) return false;
 
   const hoje = new Date();
-  const vencimento = new Date(conta.dataVencimento);
+  const vencimento = parseDataBR(conta.dataVencimento);
 
   hoje.setHours(0, 0, 0, 0);
   vencimento.setHours(0, 0, 0, 0);
@@ -321,7 +344,7 @@ function getContaUrgencia(conta) {
   if (conta.pago) return "pago";
 
   const hoje = new Date();
-  const vencimento = new Date(conta.dataVencimento);
+  const vencimento = parseDataBR(conta.dataVencimento);
 
   hoje.setHours(0, 0, 0, 0);
   vencimento.setHours(0, 0, 0, 0);
@@ -717,6 +740,29 @@ if (tipoCartao === "credito" && !limiteCartao) {
   setErroCartao("Informe o limite do cartão.");
   return;
 }
+if (
+  tipoCartao === "credito" &&
+  (
+    Number.isNaN(diaFechamentoNumero) ||
+    diaFechamentoNumero < 1 ||
+    diaFechamentoNumero > 31
+  )
+) {
+  setErroCartao("O dia de fechamento precisa estar entre 1 e 31.");
+  return;
+}
+
+if (
+  tipoCartao === "credito" &&
+  (
+    Number.isNaN(diaVencimentoNumero) ||
+    diaVencimentoNumero < 1 ||
+    diaVencimentoNumero > 31
+  )
+) {
+  setErroCartao("O dia de vencimento precisa estar entre 1 e 31.");
+  return;
+}
     const duplicado = cartoes.some(
       (cartaoExistente) =>
         cartaoExistente.nome.toLowerCase() === nomeNormalizado &&
@@ -727,16 +773,25 @@ if (tipoCartao === "credito" && !limiteCartao) {
       setErroCartao("Esse cartão já existe com esse tipo.");
       return;
     }
-
+const diaFechamentoNumero = parseInt(diaFechamento.split("/")[0], 10);
+const diaVencimentoNumero = parseInt(diaVencimento.split("/")[0], 10);
     const novoCartao = {
   id: Date.now(),
   nome: nomeCartao.trim(),
   tipo: tipoCartao,
   diaFechamento:
-  tipoCartao === "credito" ? Number(diaFechamento) : null,
+  tipoCartao === "credito" &&
+  diaFechamentoNumero >= 1 &&
+  diaFechamentoNumero <= 31
+    ? diaFechamentoNumero
+    : null,
 
 diaVencimento:
-  tipoCartao === "credito" ? Number(diaVencimento) : null,
+  tipoCartao === "credito" &&
+  diaVencimentoNumero >= 1 &&
+  diaVencimentoNumero <= 31
+    ? diaVencimentoNumero
+    : null,
 
   limite:
     tipoCartao === "credito"
@@ -1254,7 +1309,7 @@ function excluirConta(idConta) {
 // ╔══════════════════════════════════════════════╗
 // ║          ORDENAR POR DATA                    ║
 // ╚══════════════════════════════════════════════╝
-  return new Date(a.dataVencimento) - new Date(b.dataVencimento);
+  return parseDataBR(a.dataVencimento) - parseDataBR(b.dataVencimento);
 });
 // ╔══════════════════════════════════════════════╗
 // ║           CÁLCULO DE SALDO DISPONÍVEL        ║
@@ -1319,6 +1374,7 @@ const COLORS = [
   "#ef4444",
   "#f59e0b",
   "#3b82f6",
+  "#8b5cf6",
 ];
   const mostrarGrafico =
   totalSalario > 0 ||
@@ -2439,47 +2495,75 @@ function salarioDisponivel(pessoa) {
 </li>
 ) : (
   cartoes.map((cartao) => (
-                <li key={cartao.id} style={styles.itemLista}>
-                  <span style={styles.itemText}>
-  {cartao.nome}
-  {cartao.tipo === "credito" && cartao.diaFechamento && (
-  <span
-    style={{
-      marginLeft: 8,
-      fontSize: 12,
-      opacity: 0.9,
+                <li key={cartao.id} style={styles.itemListaColuna}>
+  <div style={styles.itemLinhaSuperior}>
+    <span
+      style={{
+        ...styles.itemText,
+        display: "flex",
+        flexDirection: "column",
+        gap: 4,
+      }}
+    >
+      <strong>{cartao.nome}</strong>
 
-      ...(temaAtivo.urgency?.[getUrgenciaFechamento(cartao)]?.border && {
-        border: temaAtivo.urgency[getUrgenciaFechamento(cartao)].border,
-        padding: "2px 6px",
-        borderRadius: 6,
-      }),
+      <span style={{ fontSize: 12, opacity: 0.8 }}>
+        Tipo: {cartao.tipo}
+      </span>
 
-      ...(temaAtivo.urgency?.[getUrgenciaFechamento(cartao)]?.bg && {
-        background: temaAtivo.urgency[getUrgenciaFechamento(cartao)].bg,
-      }),
+      {cartao.tipo === "credito" && (
+        <>
+          <span
+            style={{
+              fontSize: 12,
+              ...(temaAtivo.urgency?.[getUrgenciaFechamento(cartao)]?.border && {
+                border: temaAtivo.urgency[getUrgenciaFechamento(cartao)].border,
+                padding: "2px 6px",
+                borderRadius: 6,
+              }),
+              ...(temaAtivo.urgency?.[getUrgenciaFechamento(cartao)]?.bg && {
+                background: temaAtivo.urgency[getUrgenciaFechamento(cartao)].bg,
+              }),
+              ...(temaAtivo.urgency?.[getUrgenciaFechamento(cartao)]?.glow && {
+                boxShadow: temaAtivo.urgency[getUrgenciaFechamento(cartao)].glow,
+              }),
+            }}
+          >
+            📅 Fecha: {cartao.diaFechamento || "-"} • Vence: {cartao.diaVencimento || "-"}
+          </span>
 
-      ...(temaAtivo.urgency?.[getUrgenciaFechamento(cartao)]?.glow && {
-        boxShadow: temaAtivo.urgency[getUrgenciaFechamento(cartao)].glow,
-      }),
-    }}
-  >
-    (fecha dia {cartao.diaFechamento} • vence dia {cartao.diaVencimento})
-  </span>
-)}
-</span>
+          <span style={{ fontSize: 12 }}>
+            💳 Limite: {formatarMoeda(cartao.limite || 0)}
+          </span>
 
-                  <span
-                    style={{
-                      ...styles.badgeMini,
-                      ...(cartao.tipo === "debito"
-                        ? styles.badgeDebito
-                        : styles.badgeCredito),
-                    }}
-                  >
-                    {cartao.tipo}
-                  </span>
-                </li>
+          <span style={{ fontSize: 12 }}>
+            📉 Usado: {formatarMoeda(cartao.limiteUsado || 0)}
+          </span>
+        </>
+      )}
+    </span>
+
+    <span
+      style={{
+        ...styles.badgeMini,
+        ...(cartao.tipo === "debito"
+          ? styles.badgeDebito
+          : styles.badgeCredito),
+      }}
+    >
+      {cartao.tipo}
+    </span>
+  </div>
+
+  <div style={styles.actionRow}>
+    <button
+      onClick={() => excluirCartao(cartao.id)}
+      style={styles.actionButtonDanger}
+    >
+      Excluir
+    </button>
+  </div>
+</li>
               ))
               )}
             </ul>
@@ -2766,7 +2850,9 @@ style={{
       ║ Agora com label claro e ícone                ║
       ╚══════════════════════════════════════════════╝ */}
   <span style={{ fontSize: 12, color: temaAtivo.subtitle }}>
-    📅 Vencimento: {new Date(conta.dataVencimento).toLocaleDateString("pt-BR")}
+    📅 Vencimento: {
+  parseDataBR(conta.dataVencimento)?.toLocaleDateString("pt-BR") || "Data inválida"
+}
   </span>
 
   {/* ╔══════════════════════════════════════════════╗
@@ -2854,6 +2940,8 @@ style={{
 // ║ "/pessoas" → Gestão de pessoas               ║
 // ╚══════════════════════════════════════════════╝
 export default function App() {
+  
+
   const [pessoas, setPessoas] = useState(() =>
     lerJsonStorage(STORAGE_KEYS.pessoas, [])
   );
