@@ -397,7 +397,13 @@ const [nomePessoa, setNomePessoa] = useState("");
   const [contas, setContas] = useState(() =>
     lerJsonStorage(STORAGE_KEYS.contas, [])
   );
-
+// ╔══════════════════════════════════════════════╗
+// ║        HISTÓRICO DE MOVIMENTAÇÕES            ║
+// ╚══════════════════════════════════════════════╝
+  const [movimentacoes, setMovimentacoes] = useState([]);
+  const [valorSaldoInput, setValorSaldoInput] = useState("");
+  const [comentarioSaldo, setComentarioSaldo] = useState("");
+  const [pessoaSaldoSelecionada, setPessoaSaldoSelecionada] = useState(null);
   const [nomeConta, setNomeConta] = useState("");
   const [valorConta, setValorConta] = useState("");
   const [dataConta, setDataConta] = useState("");
@@ -577,6 +583,33 @@ const novaPessoa = {
       )
     );
   }
+
+// ╔══════════════════════════════════════════════╗
+// ║     ADICIONAR / REMOVER SALDO (COM LOG)      ║
+// ╚══════════════════════════════════════════════╝
+function alterarSaldoPessoa(idPessoa, valor, comentario = "") {
+  const numero = parseFloat(String(valor).replace(",", "."));
+
+  if (isNaN(numero)) return;
+
+  setPessoas((prev) =>
+    prev.map((p) =>
+      p.id === idPessoa
+        ? { ...p, saldo: (p.saldo || 0) + numero }
+        : p
+    )
+  );
+
+  const novaMovimentacao = {
+    id: Date.now(),
+    pessoaId: idPessoa,
+    valor: numero,
+    comentario,
+    data: new Date().toISOString(),
+  };
+
+  setMovimentacoes((prev) => [novaMovimentacao, ...prev]);
+}
 
 // ╔══════════════════════════════════════════════╗
 // ║            FUNÇÃO: ADICIONAR CARTÃO          ║
@@ -1049,6 +1082,11 @@ const dataGrafico = [
   { name: "Crédito", value: paraNumero(faturaAtualFiltrada) || 0 },
   { name: "Contas pagas", value: totalContasPagas || 0 },
 ];
+
+const dadosSaldoPessoas = pessoas.map((p) => ({
+  name: p.nome,
+  saldo: p.saldo || 0,
+}));
 
   // ╔══════════════════════════════════════════════╗
   // ║           CORES DO GRÁFICO                   ║
@@ -1805,8 +1843,99 @@ footer: {
     ║                  LINHA 2                     ║
     ╚══════════════════════════════════════════════╝ */}
 <div style={styles.bottomGrid}>
+  <div style={{ ...styles.card, gridColumn: "span 1", minHeight: 520 }}>
+  <div style={styles.cardHeader}>
+    <h2 style={styles.cardTitle}>Saldo por pessoa</h2>
+    <span style={styles.cardChip}>Financeiro</span>
+  </div>
+
+  <div style={{ marginBottom: 12 }}>
+    <ResponsiveContainer width="100%" height={140}>
+      <BarChart data={dadosSaldoPessoas}>
+        <XAxis dataKey="name" />
+        <YAxis />
+        <Tooltip formatter={(v) => formatarMoeda(v)} />
+
+        <Bar dataKey="saldo" radius={[10, 10, 0, 0]}>
+          {dadosSaldoPessoas.map((_, index) => (
+            <Cell key={index} fill={COLORS[index % COLORS.length]} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  </div>
+
+  {pessoas.map((pessoa) => (
+    <div key={pessoa.id} style={styles.itemListaColuna}>
+      <div style={styles.itemLinhaSuperior}>
+        <strong>{pessoa.nome}</strong>
+        <span>{formatarMoeda(pessoa.saldo || 0)}</span>
+      </div>
+
+      <div style={styles.actionRow}>
+        <button
+  onClick={() => setPessoaSaldoSelecionada(pessoa.id)}
+  style={styles.actionButton}
+>
+  Ajustar saldo
+</button>
+      </div>
+      {pessoaSaldoSelecionada === pessoa.id && (
+  <div style={{ marginTop: 10 }}>
+    <input
+      placeholder="Valor"
+      value={valorSaldoInput}
+      onChange={(e) => setValorSaldoInput(e.target.value)}
+      style={styles.input}
+    />
+
+    <input
+      placeholder="Comentário (opcional)"
+      value={comentarioSaldo}
+      onChange={(e) => setComentarioSaldo(e.target.value)}
+      style={styles.input}
+    />
+
+    <div style={{ display: "flex", gap: 8 }}>
+  <button
+    onClick={() => {
+      alterarSaldoPessoa(pessoa.id, valorSaldoInput, comentarioSaldo);
+      setPessoaSaldoSelecionada(null);
+      setValorSaldoInput("");
+      setComentarioSaldo("");
+    }}
+    style={styles.button}
+  >
+    + Adicionar
+  </button>
+
+  <button
+    onClick={() => {
+      alterarSaldoPessoa(pessoa.id, "-" + valorSaldoInput, comentarioSaldo);
+      setPessoaSaldoSelecionada(null);
+      setValorSaldoInput("");
+      setComentarioSaldo("");
+    }}
+    style={styles.buttonSecundario}
+  >
+    - Remover
+  </button>
+</div>
+
+    <button
+      onClick={() => setPessoaSaldoSelecionada(null)}
+      style={styles.buttonSecundario}
+    >
+      Cancelar
+    </button>
+  </div>
+)}
+    </div>
+  ))}
+</div>
           <div style={styles.card}>
             <div style={styles.cardHeader}>
+              
               <h2 style={styles.cardTitle}>Pessoas</h2>
               <span style={styles.cardChip}>Rendas</span>
             </div>
@@ -1903,45 +2032,6 @@ footer: {
                       Excluir
                     </button>
                   </div>
-                  <div style={styles.actionRow}>
-  <button
-    onClick={() => {
-      const valor = prompt("Quanto deseja adicionar?");
-      if (!valor) return;
-
-      const numero = parseFloat(valor.replace(",", "."));
-      if (isNaN(numero)) return;
-
-      setPessoas(pessoas.map(p =>
-        p.id === pessoa.id
-          ? { ...p, saldo: (p.saldo || 0) + numero }
-          : p
-      ));
-    }}
-    style={styles.actionButton}
-  >
-    + Adicionar
-  </button>
-
-  <button
-    onClick={() => {
-      const valor = prompt("Quanto deseja remover?");
-      if (!valor) return;
-
-      const numero = parseFloat(valor.replace(",", "."));
-      if (isNaN(numero)) return;
-
-      setPessoas(pessoas.map(p =>
-        p.id === pessoa.id
-          ? { ...p, saldo: (p.saldo || 0) - numero }
-          : p
-      ));
-    }}
-    style={styles.actionButtonDanger}
-  >
-    - Remover
-  </button>
-</div>
                 </li>
               )))}
             </ul>
