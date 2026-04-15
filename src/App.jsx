@@ -1,10 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { paraNumero } from "./utils/finance";
 
-// ==============================
-// IMPORTS DO GRÁFICO
-// ==============================
-import { PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
+// ╔══════════════════════════════════════════════╗
+// ║                  GRÁFICO                     ║
+// ╚══════════════════════════════════════════════╝
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+  Cell
+} from "recharts";
 
 // ==============================
 // CHAVES DO LOCALSTORAGE
@@ -20,9 +29,9 @@ const STORAGE_KEYS = {
   contas: "controle-financeiro:contas",
 };
 
-// ==============================
-// TEMAS PREDEFINIDOS
-// ==============================
+// ╔══════════════════════════════════════════════╗
+// ║             TEMAS PREDEFINIDOS               ║
+// ╚══════════════════════════════════════════════╝
 const THEMES = {
   cassette_neon: {
     label: "Cassette Neon",
@@ -195,9 +204,9 @@ const THEMES = {
   },
 };
 
-// ==============================
-// FUNÇÕES AUXILIARES DE LEITURA
-// ==============================
+// ╔══════════════════════════════════════════════╗
+// ║         FUNÇÕES AUXILIARES DE LEITURA        ║
+// ╚══════════════════════════════════════════════╝
 
 function lerTextoStorage(chave) {
   if (typeof window === "undefined") {
@@ -274,38 +283,56 @@ const RESET_MESSAGES = [
 ];
 
 export default function App() {
-  // ==============================
-  // STATES DE PERFIL / VISÃO
-  // ==============================
-
-  // "household" = visão combinada da casa
-  // qualquer outro valor = id da pessoa ativa
+// ╔══════════════════════════════════════════════╗
+// ║        DEFINIÇÃO DO PERFIL ATIVO             ║
+// ╠══════════════════════════════════════════════╣
+// ║ household = visão combinada da casa          ║
+// ║ qualquer outro valor = id da pessoa ativa    ║
+// ╚══════════════════════════════════════════════╝
   const [perfilAtivo, setPerfilAtivo] = useState(
     () => lerTextoStorage(STORAGE_KEYS.perfilAtivo) || "household"
   );
 
-  // Tema da visão conjunta (Household)
+// ╔══════════════════════════════════════════════╗
+// ║         TEMA DA VISÃO CONJUNTA               ║
+// ╚══════════════════════════════════════════════╝
 
 const [resetEtapa, setResetEtapa] = useState(
   () => Number(lerTextoStorage(STORAGE_KEYS.resetEtapa) || 0)
 );
 
-  // ==============================
-  // STATES DE PESSOAS
-  // ==============================
+// ╔══════════════════════════════════════════════╗
+// ║               STATES DE PESSOAS              ║
+// ╚══════════════════════════════════════════════╝
 
-  const [pessoas, setPessoas] = useState(() =>
-    lerJsonStorage(STORAGE_KEYS.pessoas, [])
-  );
+const [pessoas, setPessoas] = useState(() =>
+  lerJsonStorage(STORAGE_KEYS.pessoas, [])
+);
 
-  const [nomePessoa, setNomePessoa] = useState("");
+// ╔══════════════════════════════════════════════╗
+// ║             LAYOUT DO DASHBOARD              ║
+// ╚══════════════════════════════════════════════╝
+const [layout, setLayout] = useState([
+  { i: "visao", x: 0, y: 0, w: 3, h: 2 },
+  { i: "leitura", x: 9, y: 0, w: 3, h: 2 },
+  { i: "grafico", x: 3, y: 0, w: 6, h: 4 },
+
+  { i: "pessoas", x: 0, y: 2, w: 3, h: 3 },
+  { i: "resumo", x: 9, y: 2, w: 3, h: 3 },
+
+  { i: "cartoes", x: 0, y: 5, w: 4, h: 3 },
+  { i: "gastos", x: 4, y: 5, w: 4, h: 3 },
+  { i: "contas", x: 8, y: 5, w: 4, h: 3 },
+]);
+
+const [nomePessoa, setNomePessoa] = useState("");
   const [salarioPessoa, setSalarioPessoa] = useState("");
   const [pessoaEmEdicaoId, setPessoaEmEdicaoId] = useState(null);
   const [erroPessoa, setErroPessoa] = useState("");
 
-  // ==============================
-  // STATES PRINCIPAIS
-  // ==============================
+// ╔══════════════════════════════════════════════╗
+// ║              STATES PRINCIPAIS               ║
+// ╚══════════════════════════════════════════════╝
 
   const [gastoDebito, setGastoDebito] = useState(() =>
     lerTextoStorage(STORAGE_KEYS.gastoDebito)
@@ -315,9 +342,9 @@ const [resetEtapa, setResetEtapa] = useState(
     lerTextoStorage(STORAGE_KEYS.faturaAtual)
   );
 
-  // ==============================
-  // STATES DE CARTÕES
-  // ==============================
+// ╔══════════════════════════════════════════════╗
+// ║               STATES DE CARTÕES              ║
+// ╚══════════════════════════════════════════════╝
 
   const [cartoes, setCartoes] = useState(() =>
     lerJsonStorage(STORAGE_KEYS.cartoes, [])
@@ -327,9 +354,9 @@ const [resetEtapa, setResetEtapa] = useState(
   const [tipoCartao, setTipoCartao] = useState("credito");
   const [erroCartao, setErroCartao] = useState("");
 
-  // ==============================
-  // STATES DE GASTOS
-  // ==============================
+// ╔══════════════════════════════════════════════╗
+// ║                STATES DE GASTOS              ║
+// ╚══════════════════════════════════════════════╝
 
   const [gastos, setGastos] = useState(() =>
     lerJsonStorage(STORAGE_KEYS.gastos, [])
@@ -343,9 +370,9 @@ const [resetEtapa, setResetEtapa] = useState(
   const [erroGasto, setErroGasto] = useState("");
   
 
-  // ==============================
-  // STATES DE CONTAS (BOLETOS)
-  // ==============================
+// ╔══════════════════════════════════════════════╗
+// ║           STATES DE CONTAS (BOLETOS)         ║
+// ╚══════════════════════════════════════════════╝
 
   const [contas, setContas] = useState(() =>
     lerJsonStorage(STORAGE_KEYS.contas, [])
@@ -357,9 +384,9 @@ const [resetEtapa, setResetEtapa] = useState(
   const [erroConta, setErroConta] = useState("");
   const [quemPagouConta, setQuemPagouConta] = useState("");
 
-  // ==============================
-  // EFEITOS DE PERSISTÊNCIA
-  // ==============================
+// ╔══════════════════════════════════════════════╗
+// ║            EFEITOS DE PERSISTÊNCIA           ║
+// ╚══════════════════════════════════════════════╝
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -419,9 +446,9 @@ useEffect(() => {
   );
 }, [contas]);
 
-  // ==============================
-  // FUNÇÕES DE PESSOAS
-  // ==============================
+// ╔══════════════════════════════════════════════╗
+// ║               FUNÇÕES DE PESSOAS             ║
+// ╚══════════════════════════════════════════════╝
 
   function limparFormularioPessoa() {
     setNomePessoa("");
@@ -531,9 +558,9 @@ const novaPessoa = {
     );
   }
 
-  // ==============================
-  // FUNÇÃO: ADICIONAR CARTÃO
-  // ==============================
+// ╔══════════════════════════════════════════════╗
+// ║            FUNÇÃO: ADICIONAR CARTÃO          ║
+// ╚══════════════════════════════════════════════╝
 
   function adicionarCartao() {
     const nomeNormalizado = nomeCartao.trim().toLowerCase();
@@ -565,9 +592,9 @@ const novaPessoa = {
     setErroCartao("");
   }
 
-  // ==============================
-  // FUNÇÕES DE GASTOS
-  // ==============================
+// ╔══════════════════════════════════════════════╗
+// ║                FUNÇÕES DE GASTOS             ║
+// ╚══════════════════════════════════════════════╝
 
   function limparFormularioGasto() {
     setNomeGasto("");
@@ -634,9 +661,9 @@ const novaPessoa = {
 
   const valor = paraNumero(valorGasto);
 
-  // =========================
-  // 🔥 EDIT MODE (FIXED)
-  // =========================
+// ╔══════════════════════════════════════════════╗
+// ║              EDIÇÃO DE GASTO                 ║
+// ╚══════════════════════════════════════════════╝
   if (gastoEmEdicaoId) {
     const gastoAntigo = gastos.find(g => g.id === gastoEmEdicaoId);
 
@@ -644,7 +671,9 @@ const novaPessoa = {
 
     let pessoasAtualizadas = [...pessoas];
 
-    // 🔁 DEVOLVE valor antigo (se era débito)
+// ╔══════════════════════════════════════════════╗
+// ║        RESTAURA VALOR ANTIGO (DÉBITO)        ║
+// ╚══════════════════════════════════════════════╝
     if (gastoAntigo.tipo === "debito") {
       pessoasAtualizadas = pessoasAtualizadas.map(p =>
         p.id === gastoAntigo.pessoaId
@@ -653,7 +682,9 @@ const novaPessoa = {
       );
     }
 
-    // 🔥 SUBTRAI valor novo (se é débito)
+// ╔══════════════════════════════════════════════╗
+// ║        APLICA NOVO VALOR (DÉBITO)            ║
+// ╚══════════════════════════════════════════════╝
     if (cartao.tipo === "debito") {
       pessoasAtualizadas = pessoasAtualizadas.map(p =>
         p.id === pessoa.id
@@ -684,9 +715,9 @@ const novaPessoa = {
     return;
   }
 
-  // =========================
-  // 🔥 CREATE MODE
-  // =========================
+// ╔══════════════════════════════════════════════╗
+// ║             CRIAÇÃO DE GASTO                 ║
+// ╚══════════════════════════════════════════════╝
   const novoGasto = {
     id: Date.now(),
     nome: nomeNormalizado,
@@ -700,7 +731,9 @@ const novaPessoa = {
   const novaLista = [...gastos, novoGasto];
   setGastos(novaLista);
 
-  // 🔥 SUBTRAI DO SALDO (débito)
+// ╔══════════════════════════════════════════════╗
+// ║         DESCONTA DO SALDO (DÉBITO)           ║
+// ╚══════════════════════════════════════════════╝
   if (cartao.tipo === "debito") {
     const pessoasAtualizadas = pessoas.map(p =>
       p.id === pessoa.id
@@ -743,7 +776,9 @@ function editarGasto(gasto) {
 
   let pessoasAtualizadas = [...pessoas];
 
-  // 🔥 DEVOLVE saldo se era débito
+// ╔══════════════════════════════════════════════╗
+// ║        DEVOLVE SALDO (ERA DÉBITO)            ║
+// ╚══════════════════════════════════════════════╝
   if (gasto.tipo === "debito") {
     pessoasAtualizadas = pessoasAtualizadas.map(p =>
       p.id === gasto.pessoaId
@@ -764,9 +799,9 @@ function editarGasto(gasto) {
   }
 }
 
-  // ==============================
-// FUNÇÕES DE CONTAS
-// ==============================
+// ╔══════════════════════════════════════════════╗
+// ║                FUNÇÕES DE CONTAS             ║
+// ╚══════════════════════════════════════════════╝
 
 function adicionarConta() {
   if (!nomeConta.trim()) {
@@ -827,7 +862,9 @@ function marcarContaComoPaga(idConta) {
 
   if (!pessoa) return;
 
-  // 🔥 desconta do saldo da pessoa
+// ╔══════════════════════════════════════════════╗
+// ║     DESCONTA DO SALDO DA PESSOA              ║
+// ╚══════════════════════════════════════════════╝
   const pessoasAtualizadas = pessoas.map((p) =>
     p.id === pessoa.id
       ? { ...p, saldo: (p.saldo || 0) - paraNumero(conta.valor) }
@@ -836,7 +873,9 @@ function marcarContaComoPaga(idConta) {
 
   setPessoas(pessoasAtualizadas);
 
-  // marca como pago
+// ╔══════════════════════════════════════════════╗
+// ║             MARCAR COMO PAGO                 ║
+// ╚══════════════════════════════════════════════╝
   const contasAtualizadas = contas.map((c) =>
     c.id === idConta
       ? { ...c, pago: true }
@@ -846,9 +885,9 @@ function marcarContaComoPaga(idConta) {
   setContas(contasAtualizadas);
 }
 
-  // ==============================
-  // CÁLCULOS DE PERFIL ATIVO
-  // ==============================
+// ╔══════════════════════════════════════════════╗
+// ║           CÁLCULOS DE PERFIL ATIVO           ║
+// ╚══════════════════════════════════════════════╝
 
   const ehHousehold = perfilAtivo === "household";
 
@@ -863,17 +902,23 @@ function marcarContaComoPaga(idConta) {
   }, [ehHousehold, perfilAtivo, pessoas]);
 
 const temaAtivo = useMemo(() => {
-  // VISÃO INDIVIDUAL
+// ╔══════════════════════════════════════════════╗
+// ║             VISÃO INDIVIDUAL                 ║
+// ╚══════════════════════════════════════════════╝
   if (!ehHousehold && pessoaAtiva) {
     return THEMES[pessoaAtiva.tema] ?? THEMES.cassette_neon;
   }
 
-  // CASO PADRÃO
+// ╔══════════════════════════════════════════════╗
+// ║               CASO PADRÃO                    ║
+// ╚══════════════════════════════════════════════╝
   if (pessoas.length === 0) {
     return THEMES.cassette_neon;
   }
 
-  // HOUSEHOLD (média das cores)
+// ╔══════════════════════════════════════════════╗
+// ║       HOUSEHOLD (MÉDIA DAS CORES)            ║
+// ╚══════════════════════════════════════════════╝
   const cores = pessoas.map(
     (p) => THEMES[p.tema] ?? THEMES.cassette_neon
   );
@@ -954,10 +999,14 @@ const temaAtivo = useMemo(() => {
   .reduce((acc, conta) => acc + paraNumero(conta.valor), 0);
 
  const contasOrdenadas = [...contas].sort((a, b) => {
-  // não pagas primeiro
+// ╔══════════════════════════════════════════════╗
+// ║        CONTAS NÃO PAGAS PRIMEIRO             ║
+// ╚══════════════════════════════════════════════╝
   if (a.pago !== b.pago) return a.pago ? 1 : -1;
 
-  // depois por data
+// ╔══════════════════════════════════════════════╗
+// ║          ORDENAR POR DATA                    ║
+// ╚══════════════════════════════════════════════╝
   return new Date(a.dataVencimento) - new Date(b.dataVencimento);
 });
 
@@ -969,15 +1018,36 @@ const totalContasPagas = contas
   .filter((c) => c.pago)
   .reduce((acc, c) => acc + paraNumero(c.valor), 0);
 
+const totalSalario = pessoas.reduce(
+  (acc, p) => acc + paraNumero(p.salario),
+  0
+);
+
 const dataGrafico = [
+  { name: "Salário", value: totalSalario },
   { name: "Débito", value: paraNumero(gastoDebitoFiltrado) || 0 },
   { name: "Crédito", value: paraNumero(faturaAtualFiltrada) || 0 },
   { name: "Contas", value: totalContasPagas || 0 },
 ];
 
-  const COLORS = ["#ff6b7a", "#ffb84d", "#4edbb0"];
+  // ╔══════════════════════════════════════════════╗
+  // ║           CORES DO GRÁFICO                   ║
+  // ╠══════════════════════════════════════════════╣
+  // ║ salário                                      ║
+  // ║ débito                                       ║
+  // ║ crédito                                      ║
+  // ║ contas                                       ║
+  // ╚══════════════════════════════════════════════╝
+const COLORS = [
+  "#22c55e",
+  "#ef4444",
+  "#f59e0b",
+  "#3b82f6",
+];
   const mostrarGrafico =
-  gastosFiltrados.length > 0 || totalContasPagas > 0;
+  totalSalario > 0 ||
+  gastosFiltrados.length > 0 ||
+  totalContasPagas > 0;
 
   const nomeVisaoAtiva = ehHousehold
     ? "Household"
@@ -1162,7 +1232,9 @@ topGrid: {
 },
 bottomGrid: {
   display: "grid",
-  gridTemplateColumns: "1fr 1fr 1fr", // 2 colunas
+  gridTemplateColumns: "1fr 1fr 1fr", // ╔══════════════════════════════════════════════╗
+                                      // ║              GRID INFERIOR                   ║
+                                      // ╚══════════════════════════════════════════════╝
   gap: "18px",
   alignItems: "start",
   marginBottom: "18px",
@@ -1459,7 +1531,9 @@ footer: {
   return (
         <div style={styles.container}>
       <div style={styles.shell}>
-        {/* BARRA SUPERIOR / IDENTIDADE VISUAL */}
+        {/* ╔══════════════════════════════════════════════╗
+            ║        BARRA SUPERIOR / IDENTIDADE VISUAL    ║
+            ╚══════════════════════════════════════════════╝ */}
         <div style={styles.machineBar}>
           <div style={styles.machineLights}>
             <span style={{ ...styles.machineDot, background: "#ff6b7a" }} />
@@ -1470,7 +1544,9 @@ footer: {
           <div style={styles.machineLabel}>FINANCE MODULE / HOME PANEL</div>
         </div>
 
-        {/* CABEÇALHO */}
+        {/* ╔══════════════════════════════════════════════╗
+            ║                 CABEÇALHO                    ║
+            ╚══════════════════════════════════════════════╝ */}
         <div style={styles.header}>
           <div>
             <h1 style={styles.title}>DividimOS</h1>
@@ -1495,7 +1571,9 @@ footer: {
           </div>
         </div>
 
-        {/* LINHA 1: PERFIL ATIVO + LEITURA + GRÁFICO */}
+        {/* ╔══════════════════════════════════════════════╗
+            ║                  LINHA 1                     ║
+            ╚══════════════════════════════════════════════╝ */}
         <div style={styles.topGrid}>
           <div style={styles.card}>
             <div style={styles.cardHeader}>
@@ -1601,38 +1679,49 @@ footer: {
               </div>
             ) : (
               <div style={styles.graficoWrapper}>
-                <PieChart width={320} height={240}>
-                  <Pie
-                    data={dataGrafico}
-                    dataKey="value"
-                    nameKey="name"
-                    outerRadius={82}
-                    isAnimationActive={true}
-                    animationBegin={0}
-                    animationDuration={800}
-                    animationEasing="ease-out"
-                  >
-                    {dataGrafico.map((item, index) => (
-                      <Cell key={index} fill={COLORS[index]} />
-                    ))}
-                  </Pie>
+<ResponsiveContainer width="100%" height={240}>
+  <BarChart data={dataGrafico}>
+    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
 
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: 12,
-                      border: "1px solid rgba(255,255,255,0.15)",
-                      background: "#111821",
-                      color: "#f3f7fb",
-                    }}
-                  />
-                  <Legend />
-                </PieChart>
+    <XAxis
+      dataKey="name"
+      stroke="#94a3b8"
+      style={{ fontSize: 12 }}
+    />
+
+    <YAxis
+      stroke="#94a3b8"
+      style={{ fontSize: 12 }}
+    />
+
+    <Tooltip
+      contentStyle={{
+        borderRadius: 12,
+        border: "1px solid rgba(255,255,255,0.15)",
+        background: "#111821",
+        color: "#f3f7fb",
+      }}
+      formatter={(value) => formatarMoeda(value)}
+    />
+
+    <Bar
+      dataKey="value"
+      radius={[8, 8, 0, 0]}
+    >
+      {COLORS.map((color, index) => (
+  <Cell key={`cell-${index}`} fill={color} />
+))}
+    </Bar>
+  </BarChart>
+</ResponsiveContainer>
               </div>
             )}
           </div>
         </div>
 
-{/* LINHA 2: PESSOAS + RESUMO */}
+{/* ╔══════════════════════════════════════════════╗
+    ║                  LINHA 2                     ║
+    ╚══════════════════════════════════════════════╝ */}
 <div style={styles.bottomGrid}>
           <div style={styles.card}>
             <div style={styles.cardHeader}>
@@ -1732,6 +1821,45 @@ footer: {
                       Excluir
                     </button>
                   </div>
+                  <div style={styles.actionRow}>
+  <button
+    onClick={() => {
+      const valor = prompt("Quanto deseja adicionar?");
+      if (!valor) return;
+
+      const numero = parseFloat(valor.replace(",", "."));
+      if (isNaN(numero)) return;
+
+      setPessoas(pessoas.map(p =>
+        p.id === pessoa.id
+          ? { ...p, saldo: (p.saldo || 0) + numero }
+          : p
+      ));
+    }}
+    style={styles.actionButton}
+  >
+    + Adicionar
+  </button>
+
+  <button
+    onClick={() => {
+      const valor = prompt("Quanto deseja remover?");
+      if (!valor) return;
+
+      const numero = parseFloat(valor.replace(",", "."));
+      if (isNaN(numero)) return;
+
+      setPessoas(pessoas.map(p =>
+        p.id === pessoa.id
+          ? { ...p, saldo: (p.saldo || 0) - numero }
+          : p
+      ));
+    }}
+    style={styles.actionButtonDanger}
+  >
+    - Remover
+  </button>
+</div>
                 </li>
               )))}
             </ul>
@@ -1786,7 +1914,9 @@ footer: {
         <div style={styles.bottomGrid}>
           <div style={styles.card}>
             <div style={styles.cardHeader}>
-              {/* LINHA INFERIOR */}
+              {/* ╔══════════════════════════════════════════════╗
+                  ║               LINHA INFERIOR                 ║
+                  ╚══════════════════════════════════════════════╝ */}
 
               <h2 style={styles.cardTitle}>Cartões</h2>
               <span style={styles.cardChip}>Cadastro</span>
@@ -1973,7 +2103,9 @@ footer: {
           </ul>
         </div>
 
-        {/* ===================== CONTAS ===================== */}
+        {/* ╔══════════════════════════════════════════════╗
+            ║                   CONTAS                     ║
+            ╚══════════════════════════════════════════════╝ */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>
             <h2 style={styles.cardTitle}>Contas</h2>
@@ -2044,8 +2176,8 @@ style={{
     : {}),
   ...(getContaUrgencia(conta) === "alto"
     ? {
-        border: "1px solid #ff6b7a",
-        background: "rgba(255,107,122,0.10)",
+        border: "2px solid #ff2d2d",
+        background: "rgba(255,0,0,0.18)",
       }
     : {}),
   ...(getContaUrgencia(conta) === "critico"
@@ -2063,9 +2195,21 @@ style={{
     : {}),
 }}
 >
-                  <span>
+                  <span style={{ fontWeight: "600", color: "#ffffff" }}>
                     <>
-  {conta.nome} · {formatarMoeda(conta.valor)} · vence {conta.dataVencimento}
+  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+  <span style={{ fontWeight: "700", fontSize: 14 }}>
+    {conta.nome}
+  </span>
+
+  <span style={{ fontSize: 13, color: "#cbd5e1" }}>
+    {formatarMoeda(conta.valor)}
+  </span>
+
+  <span style={{ fontSize: 12, color: "#94a3b8" }}>
+    vence {conta.dataVencimento}
+  </span>
+</div>
 
   {isContaAtrasada(conta) && (
     <span style={{ color: "#ff4d4f", marginLeft: 8, fontWeight: "bold" }}>
@@ -2096,7 +2240,9 @@ style={{
         </div>
       </div>
 </div>
-      {/* ===================== FOOTER ===================== */}
+      {/* ╔══════════════════════════════════════════════╗
+          ║                   FOOTER                     ║
+          ╚══════════════════════════════════════════════╝ */}
       <div style={styles.footer}>
         <div style={styles.resetBox}>
           <p style={styles.resetTitle}>☢ Zona de risco</p>
