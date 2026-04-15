@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { paraNumero } from "./utils/finance";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import PessoasPage from "./PessoasPage";
 
 // ╔══════════════════════════════════════════════╗
@@ -304,7 +304,7 @@ const RESET_MESSAGES = [
   "☢ ÚLTIMA CHANCE. Apagar tudo mesmo?",
 ];
 function Dashboard({ pessoas, setPessoas }) {
-
+const navigate = useNavigate();
 // ╔══════════════════════════════════════════════╗
 // ║        DEFINIÇÃO DO PERFIL ATIVO             ║
 // ╠══════════════════════════════════════════════╣
@@ -345,10 +345,7 @@ const [layout, setLayout] = useState([
   { i: "contas", x: 8, y: 5, w: 4, h: 3 },
 ]);
 
-const [nomePessoa, setNomePessoa] = useState("");
-  const [salarioPessoa, setSalarioPessoa] = useState("");
-  const [pessoaEmEdicaoId, setPessoaEmEdicaoId] = useState(null);
-  const [erroPessoa, setErroPessoa] = useState("");
+
 
 // ╔══════════════════════════════════════════════╗
 // ║              STATES PRINCIPAIS               ║
@@ -476,65 +473,10 @@ useEffect(() => {
 // ║               FUNÇÕES DE PESSOAS             ║
 // ╚══════════════════════════════════════════════╝
 
-  function limparFormularioPessoa() {
-    setNomePessoa("");
-    setSalarioPessoa("");
-    setPessoaEmEdicaoId(null);
-    setErroPessoa("");
-  }
 
-  function salvarPessoa() {
-    const nomeNormalizado = nomePessoa.trim();
 
-    if (!nomeNormalizado) {
-      setErroPessoa("Digite um nome para a pessoa.");
-      return;
-    }
 
-    if (!salarioPessoa) {
-      setErroPessoa("Digite um salário para a pessoa.");
-      return;
-    }
 
-    const salarioConvertido = paraNumero(salarioPessoa);
-
-    if (pessoaEmEdicaoId) {
-      setPessoas((pessoasAnteriores) =>
-        pessoasAnteriores.map((pessoa) =>
-          pessoa.id === pessoaEmEdicaoId
-            ? {
-                ...pessoa,
-                nome: nomeNormalizado,
-                salario: salarioConvertido,
-              }
-            : pessoa
-        )
-      );
-
-      limparFormularioPessoa();
-      return;
-    }
-
-const novaPessoa = {
-  id: Date.now(),
-  nome: nomeNormalizado,
-  salario: salarioConvertido,
-  saldo: salarioConvertido,
-  tema: "cassette_neon",
-};
-
-    setPessoas([...pessoas, novaPessoa]);
-    limparFormularioPessoa();
-  }
-
-  function editarPessoa(pessoa) {
-    setNomePessoa(pessoa.nome);
-    setSalarioPessoa(
-  String(pessoa.salario).replace(".", ",")
-);
-    setPessoaEmEdicaoId(pessoa.id);
-    setErroPessoa("");
-  }
 
   function excluirPessoa(idPessoa) {
     setPessoas((pessoasAnteriores) =>
@@ -562,9 +504,7 @@ const novaPessoa = {
       setPessoaSelecionada("");
     }
 
-    if (pessoaEmEdicaoId === idPessoa) {
-      limparFormularioPessoa();
-    }
+    
 
     if (String(perfilAtivo) === String(idPessoa)) {
       setPerfilAtivo("household");
@@ -1083,6 +1023,8 @@ const dataGrafico = [
   { name: "Contas pagas", value: totalContasPagas || 0 },
 ];
 
+console.log("PESSOAS:", pessoas);
+
 const dadosSaldoPessoas = pessoas.map((p) => ({
   name: p.nome,
   saldo: p.saldo || 0,
@@ -1122,10 +1064,6 @@ const COLORS = [
   }
   function limparTudo() {
   setPessoas([]);
-  setNomePessoa("");
-  setSalarioPessoa("");
-  setPessoaEmEdicaoId(null);
-  setErroPessoa("");
 
   setCartoes([]);
   setNomeCartao("");
@@ -1637,6 +1575,21 @@ footer: {
         <div style={styles.header}>
           <div>
             <h1 style={styles.title}>DividimOS</h1>
+            <div style={{ marginTop: 10 }}>
+<button
+  onClick={() => navigate("/pessoas")}
+  style={{
+    ...styles.button,
+    width: "auto",
+    padding: "10px 16px",
+    marginTop: 12,
+    fontSize: 13,
+    borderRadius: 999,
+  }}
+>
+  + Pessoas
+</button>
+</div>
             <p style={styles.subtitle}>
   Sistema de controle financeiro para casais, com visão individual,
   visão conjunta e personalização do dashboard.
@@ -1932,110 +1885,6 @@ footer: {
     </div>
   ))}
 </div>
-          <div style={styles.card}>
-            <div style={styles.cardHeader}>
-              
-              <h2 style={styles.cardTitle}>Pessoas</h2>
-              <span style={styles.cardChip}>Rendas</span>
-            </div>
-
-            <label style={styles.label}>Nome da pessoa</label>
-            <input
-              type="text"
-              value={nomePessoa}
-              onChange={(e) => setNomePessoa(e.target.value)}
-              style={styles.input}
-              placeholder="Ex.: Daniel"
-            />
-
-            <label style={styles.label}>Salário da pessoa</label>
-            <input
-              type="text"
-              value={salarioPessoa}
-              onChange={(e) => {
-  const valor = e.target.value
-    .replace(/[^\d,]/g, "")
-    .replace(/(,.*),/g, "$1");
-
-  setSalarioPessoa(valor);
-}}
-              style={styles.input}
-              placeholder="Ex.: 3500"
-            />
-
-            <button
-  onClick={salvarPessoa}
-  style={styles.button}
-  disabled={!nomePessoa || !salarioPessoa}
->
-              {pessoaEmEdicaoId ? "Salvar pessoa" : "Adicionar pessoa"}
-            </button>
-
-            {pessoaEmEdicaoId && (
-              <button
-                onClick={limparFormularioPessoa}
-                style={styles.buttonSecundario}
-              >
-                Cancelar edição
-              </button>
-            )}
-
-            {erroPessoa && <p style={styles.erro}>{erroPessoa}</p>}
-
-            <ul style={styles.lista}>
-              {pessoas.length === 0 ? (
-  <li style={styles.itemLista}>
-  <span style={styles.textoAuxiliar}>
-    Nenhuma pessoa cadastrada.
-  </span>
-</li>
-) : (
-  pessoas.map((pessoa) => (
-                <li key={pessoa.id} style={styles.itemListaColuna}>
-                  <div style={styles.itemLinhaSuperior}>
-                    <span style={styles.itemText}>
-                      {pessoa.nome} · {formatarMoeda(pessoa.salario)} · saldo: {formatarMoeda(pessoa.saldo || 0)}
-                    </span>
-
-                    <span style={{ ...styles.badgeMini, ...styles.badgeSaldo }}>
-                      renda
-                    </span>
-                  </div>
-
-                  <select
-                    value={pessoa.tema || "cassette_neon"}
-                    onChange={(e) =>
-                      alterarTemaDaPessoa(pessoa.id, e.target.value)
-                    }
-                    style={styles.input}
-                  >
-                    {Object.entries(THEMES).map(([chave, tema]) => (
-                      <option key={chave} value={chave}>
-                        {tema.label}
-                      </option>
-                    ))}
-                  </select>
-
-                  <div style={styles.actionRow}>
-                    <button
-                      onClick={() => editarPessoa(pessoa)}
-                      style={styles.actionButton}
-                    >
-                      Editar
-                    </button>
-
-                    <button
-                      onClick={() => excluirPessoa(pessoa.id)}
-                      style={styles.actionButtonDanger}
-                    >
-                      Excluir
-                    </button>
-                  </div>
-                </li>
-              )))}
-            </ul>
-          </div>
-
           <div style={{ ...styles.card, position: "sticky", top: "20px" }}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Resumo</h2>
@@ -2437,6 +2286,13 @@ export default function App() {
   const [pessoas, setPessoas] = useState(() =>
     lerJsonStorage(STORAGE_KEYS.pessoas, [])
   );
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      STORAGE_KEYS.pessoas,
+      JSON.stringify(pessoas)
+    );
+  }, [pessoas]);
 
   return (
     <BrowserRouter>
