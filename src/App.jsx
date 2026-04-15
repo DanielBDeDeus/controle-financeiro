@@ -303,7 +303,7 @@ const RESET_MESSAGES = [
   "☢ Isso vai apagar TODOS os dados salvos.",
   "☢ ÚLTIMA CHANCE. Apagar tudo mesmo?",
 ];
-function Dashboard({ pessoas, setPessoas }) {
+function Dashboard({ pessoas, setPessoas, contas, setContas }) {
 const navigate = useNavigate();
 // ╔══════════════════════════════════════════════╗
 // ║        DEFINIÇÃO DO PERFIL ATIVO             ║
@@ -391,9 +391,6 @@ const [layout, setLayout] = useState([
 // ║           STATES DE CONTAS (BOLETOS)         ║
 // ╚══════════════════════════════════════════════╝
 
-  const [contas, setContas] = useState(() =>
-    lerJsonStorage(STORAGE_KEYS.contas, [])
-  );
 // ╔══════════════════════════════════════════════╗
 // ║        HISTÓRICO DE MOVIMENTAÇÕES            ║
 // ╚══════════════════════════════════════════════╝
@@ -1553,8 +1550,8 @@ footer: {
     }),
     [temaAtivo]
   );
-    return(
-        <div style={styles.container}>
+    return (
+  <div style={styles.container}>
       <div style={styles.shell}>
         {/* ╔══════════════════════════════════════════════╗
             ║        BARRA SUPERIOR / IDENTIDADE VISUAL    ║
@@ -2286,6 +2283,9 @@ export default function App() {
   const [pessoas, setPessoas] = useState(() =>
     lerJsonStorage(STORAGE_KEYS.pessoas, [])
   );
+  const [contas, setContas] = useState(() =>
+  lerJsonStorage(STORAGE_KEYS.contas, [])
+);
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -2293,30 +2293,40 @@ export default function App() {
       JSON.stringify(pessoas)
     );
   }, [pessoas]);
-
+useEffect(() => {
+  window.localStorage.setItem(
+    STORAGE_KEYS.contas,
+    JSON.stringify(contas)
+  );
+}, [contas]);
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <Dashboard
-              pessoas={pessoas}
-              setPessoas={setPessoas}
-            />
-          }
-        />
+<BrowserRouter>
+  <Routes>
 
-        <Route
-          path="/pessoas"
-          element={
-            <PessoasPage
-              pessoas={pessoas}
-              setPessoas={setPessoas}
-            />
-          }
+    <Route
+      path="/"
+      element={
+        <Dashboard
+          pessoas={pessoas}
+          setPessoas={setPessoas}
+          contas={contas}
+          setContas={setContas}
         />
-      </Routes>
-    </BrowserRouter>
+      }
+    />
+
+    <Route
+      path="/pessoas"
+      element={
+        <PessoasPage
+          pessoas={pessoas}
+          setPessoas={setPessoas}
+          contas={contas}
+        />
+      }
+    />
+
+  </Routes>
+</BrowserRouter>
   );
 }
