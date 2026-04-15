@@ -12,7 +12,8 @@ import {
   Tooltip,
   CartesianGrid,
   ResponsiveContainer,
-  Cell
+  Cell,
+  LabelList
 } from "recharts";
 
 // ==============================
@@ -65,6 +66,25 @@ const THEMES = {
     buttonSecondaryBg: "rgba(17,24,39,0.08)",
     buttonSecondaryText: "#203243",
     buttonSecondaryBorder: "rgba(17,24,39,0.12)",
+    urgency: {
+  normal: {},
+  medio: {
+    border: "1px solid #ffb84d",
+    bg: "rgba(255,184,77,0.08)",
+  },
+  alto: {
+    border: "2px solid #ff4d4f",
+    bg: "rgba(255,77,79,0.12)",
+  },
+  critico: {
+    border: "2px solid #ff0000",
+    glow: "0 0 10px rgba(255,0,0,0.5)",
+  },
+  atrasado: {
+    border: "2px solid #ff0000",
+    bg: "rgba(255,0,0,0.08)",
+  }
+},
   },
 
   vista_glass: {
@@ -1027,7 +1047,7 @@ const dataGrafico = [
   { name: "Salário", value: totalSalario },
   { name: "Débito", value: paraNumero(gastoDebitoFiltrado) || 0 },
   { name: "Crédito", value: paraNumero(faturaAtualFiltrada) || 0 },
-  { name: "Contas", value: totalContasPagas || 0 },
+  { name: "Contas pagas", value: totalContasPagas || 0 },
 ];
 
   // ╔══════════════════════════════════════════════╗
@@ -1112,14 +1132,17 @@ const valorTemaSelecionado = pessoaAtiva?.tema || "cassette_neon";
       container: {
         width: "100%",
         minHeight: "100vh",
-        padding: "28px",
+        padding: "16px 24px",
         boxSizing: "border-box",
+        justifyContent: "center",
         overflowX: "hidden",
+        maxWidth: "1600px",
+        margin: "0 auto",
         background: temaAtivo.pageBg,
       },
 
       shell: {
-        maxWidth: "1480px",
+        maxWidth: "1600px",
         margin: "0 auto",
         padding: "18px",
         borderRadius: "28px",
@@ -1222,19 +1245,13 @@ const valorTemaSelecionado = pessoaAtiva?.tema || "cassette_neon";
         background: "linear-gradient(180deg, #4edbb0 0%, #2d9d8f 100%)",
       },
 
+
 topGrid: {
   display: "grid",
-  gridTemplateColumns: "1fr 1fr 1fr",
-  gap: "18px",
-  alignItems: "start",
-  marginBottom: "18px",
-  alignContent: "start",
-},
-bottomGrid: {
-  display: "grid",
-  gridTemplateColumns: "1fr 1fr 1fr", // ╔══════════════════════════════════════════════╗
-                                      // ║              GRID INFERIOR                   ║
-                                      // ╚══════════════════════════════════════════════╝
+// ╔══════════════════════════════════════════════╗
+// ║              GRID SUPERIOR                   ║
+// ╚══════════════════════════════════════════════╝
+  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
   gap: "18px",
   alignItems: "start",
   marginBottom: "18px",
@@ -1245,6 +1262,8 @@ card: {
   border: `1px solid ${temaAtivo.cardBorder}`,
   borderRadius: "22px",
   padding: "18px",
+  minWidth: "320px",
+  maxWidth: "100%",
   color: temaAtivo.cardText,
   boxShadow:
     "0 12px 28px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
@@ -1252,8 +1271,15 @@ card: {
 },
 
       cardGrafico: {
-        textAlign: "center",
-      },
+  textAlign: "center",
+  minHeight: "360px",
+  gridColumn: "span 2",
+  minWidth: "500px",
+  boxShadow: "0 25px 60px rgba(0,0,0,0.35)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  transform: "scale(1.02)",
+  zIndex: 2,
+},
 
       cardHeader: {
         display: "flex",
@@ -1348,12 +1374,13 @@ card: {
       },
 
       graficoWrapper: {
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        minHeight: "240px",
-        overflow: "hidden",
-      },
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  minHeight: "300px",
+  overflow: "hidden",
+  paddingTop: "8px",
+},
 
       input: {
         width: "100%",
@@ -1413,7 +1440,7 @@ card: {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        gap: "10px",
+        gap: "12px",
         padding: "10px 12px",
         borderRadius: "14px",
         background: temaAtivo.rowBg,
@@ -1474,6 +1501,16 @@ card: {
         cursor: "pointer",
         fontWeight: "700",
       },
+      actionButtonSmall: {
+  padding: "8px 14px",
+  background: "rgba(72,185,255,0.12)",
+  color: "#204761",
+  border: "1px solid rgba(72,185,255,0.16)",
+  borderRadius: "10px",
+  cursor: "pointer",
+  fontWeight: "700",
+  whiteSpace: "nowrap",
+},
       resetBox: {
   marginTop: "18px",
   padding: "14px",
@@ -1517,6 +1554,19 @@ resetButton: {
     "0 0 18px rgba(255, 179, 0, 0.25), 0 8px 24px rgba(255, 90, 54, 0.22)",
   textTransform: "uppercase",
   letterSpacing: "0.4px",
+},
+bottomGrid: {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+  gap: "18px",
+  alignItems: "start",
+},
+bottomGridFull: {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+  gap: "18px",
+  alignItems: "start",
+  marginTop: "10px",
 },
 footer: {
   marginTop: "20px",
@@ -1664,7 +1714,7 @@ footer: {
             </p>
           </div>
 
-          <div style={{ ...styles.card, ...styles.cardGrafico }}>
+          <div style={{ ...styles.card, ...styles.cardGrafico, gridColumn: "span 1" }}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>Distribuição</h2>
               <span style={styles.cardChip}>Visual</span>
@@ -1679,38 +1729,70 @@ footer: {
               </div>
             ) : (
               <div style={styles.graficoWrapper}>
-<ResponsiveContainer width="100%" height={240}>
-  <BarChart data={dataGrafico}>
-    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+<ResponsiveContainer width="100%" height={300}>
+  <BarChart
+    data={dataGrafico}
+    margin={{ top: 26, right: 18, left: 6, bottom: 10 }}
+    barCategoryGap="18%"
+  >
+    <CartesianGrid
+      strokeDasharray="4 4"
+      stroke="rgba(255,255,255,0.14)"
+      vertical={false}
+    />
 
     <XAxis
       dataKey="name"
-      stroke="#94a3b8"
-      style={{ fontSize: 12 }}
+      stroke="#64748b"
+      tick={{ fontSize: 13, fontWeight: 700, fill: "#475569" }}
+      axisLine={false}
+      tickLine={false}
     />
 
     <YAxis
       stroke="#94a3b8"
-      style={{ fontSize: 12 }}
+      tick={{ fontSize: 12, fill: "#64748b" }}
+      axisLine={false}
+      tickLine={false}
+      tickFormatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR")}`}
     />
 
     <Tooltip
+      cursor={{ fill: "rgba(255,255,255,0.05)" }}
       contentStyle={{
-        borderRadius: 12,
-        border: "1px solid rgba(255,255,255,0.15)",
-        background: "#111821",
-        color: "#f3f7fb",
+        borderRadius: 14,
+        border: "1px solid rgba(255,255,255,0.18)",
+        background: "rgba(15,23,42,0.96)",
+        color: "#f8fafc",
+        boxShadow: "0 10px 30px rgba(0,0,0,0.28)",
+      }}
+      labelStyle={{
+        color: "#cbd5e1",
+        fontWeight: 700,
+        marginBottom: 6,
       }}
       formatter={(value) => formatarMoeda(value)}
     />
 
     <Bar
       dataKey="value"
-      radius={[8, 8, 0, 0]}
+      radius={[12, 12, 0, 0]}
+      animationDuration={500}
     >
-      {COLORS.map((color, index) => (
-  <Cell key={`cell-${index}`} fill={color} />
+      {dataGrafico.map((_, index) => (
+  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
 ))}
+
+      <LabelList
+        dataKey="value"
+        position="top"
+        formatter={(value) => formatarMoeda(value)}
+        style={{
+          fill: "#0f172a",
+          fontSize: 12,
+          fontWeight: 800,
+        }}
+      />
     </Bar>
   </BarChart>
 </ResponsiveContainer>
@@ -1911,7 +1993,7 @@ footer: {
             </div>
           </div>
         </div>
-        <div style={styles.bottomGrid}>
+        <div style={styles.bottomGridFull}>
           <div style={styles.card}>
             <div style={styles.cardHeader}>
               {/* ╔══════════════════════════════════════════════╗
@@ -2168,61 +2250,50 @@ footer: {
   key={conta.id}
 style={{
   ...styles.itemLista,
-  ...(getContaUrgencia(conta) === "medio"
-    ? {
-        border: "1px solid #ffb84d",
-        background: "rgba(255,184,77,0.08)",
-      }
-    : {}),
-  ...(getContaUrgencia(conta) === "alto"
-    ? {
-        border: "2px solid #ff2d2d",
-        background: "rgba(255,0,0,0.18)",
-      }
-    : {}),
-  ...(getContaUrgencia(conta) === "critico"
-    ? {
-        border: "2px solid #ff0000",
-        boxShadow: "0 0 12px rgba(255,0,0,0.6)",
-        animation: "shake 0.3s infinite",
-      }
-    : {}),
-  ...(getContaUrgencia(conta) === "atrasado"
-    ? {
-        border: "2px solid #ff0000",
-        background: "rgba(255,0,0,0.12)",
-      }
-    : {}),
+  ...(temaAtivo.urgency?.[getContaUrgencia(conta)]?.border && {
+    border: temaAtivo.urgency[getContaUrgencia(conta)].border,
+  }),
+  ...(temaAtivo.urgency?.[getContaUrgencia(conta)]?.bg && {
+    background: temaAtivo.urgency[getContaUrgencia(conta)].bg,
+  }),
+  ...(temaAtivo.urgency?.[getContaUrgencia(conta)]?.glow && {
+    boxShadow: temaAtivo.urgency[getContaUrgencia(conta)].glow,
+  }),
 }}
 >
-                  <span style={{ fontWeight: "600", color: "#ffffff" }}>
-                    <>
-  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-  <span style={{ fontWeight: "700", fontSize: 14 }}>
-    {conta.nome}
-  </span>
+<div style={{
+  display: "flex",
+  flexDirection: "column",
+  gap: 4,
+  flex: 1
+}}>
+  <span style={{ 
+  fontWeight: "700", 
+  fontSize: 14,
+  color: temaAtivo.cardTitle
+}}>
+  {conta.nome}
+</span>
 
-  <span style={{ fontSize: 13, color: "#cbd5e1" }}>
+  <span style={{ fontSize: 13, color: temaAtivo.cardText }}>
     {formatarMoeda(conta.valor)}
   </span>
 
-  <span style={{ fontSize: 12, color: "#94a3b8" }}>
+  <span style={{ fontSize: 12, color: temaAtivo.subtitle }}>
     vence {conta.dataVencimento}
   </span>
-</div>
 
   {isContaAtrasada(conta) && (
-    <span style={{ color: "#ff4d4f", marginLeft: 8, fontWeight: "bold" }}>
+    <span style={{ color: "#ff4d4f", fontWeight: "bold" }}>
       ATRASADO
     </span>
   )}
-</>
-                  </span>
+</div>
 
 {!conta.pago && (
   <button
     onClick={() => marcarContaComoPaga(conta.id)}
-    style={styles.actionButton}
+    style={styles.actionButtonSmall}
   >
     Pagar
   </button>
