@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { paraNumero } from "./utils/finance";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import PessoasPage from "./PessoasPage";
 
 // ╔══════════════════════════════════════════════╗
 // ║                  GRÁFICO                     ║
@@ -302,7 +303,7 @@ const RESET_MESSAGES = [
   "☢ Isso vai apagar TODOS os dados salvos.",
   "☢ ÚLTIMA CHANCE. Apagar tudo mesmo?",
 ];
-function Dashboard(props) {
+function Dashboard({ pessoas, setPessoas }) {
 
 // ╔══════════════════════════════════════════════╗
 // ║        DEFINIÇÃO DO PERFIL ATIVO             ║
@@ -326,9 +327,7 @@ const [resetEtapa, setResetEtapa] = useState(
 // ║               STATES DE PESSOAS              ║
 // ╚══════════════════════════════════════════════╝
 
-const [pessoas, setPessoas] = useState(() =>
-  lerJsonStorage(STORAGE_KEYS.pessoas, [])
-);
+
 
 // ╔══════════════════════════════════════════════╗
 // ║             LAYOUT DO DASHBOARD              ║
@@ -2435,5 +2434,33 @@ style={{
 
 }
 export default function App() {
-  return <Dashboard />;
+  const [pessoas, setPessoas] = useState(() =>
+    lerJsonStorage(STORAGE_KEYS.pessoas, [])
+  );
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <Dashboard
+              pessoas={pessoas}
+              setPessoas={setPessoas}
+            />
+          }
+        />
+
+        <Route
+          path="/pessoas"
+          element={
+            <PessoasPage
+              pessoas={pessoas}
+              setPessoas={setPessoas}
+            />
+          }
+        />
+      </Routes>
+    </BrowserRouter>
+  );
 }
