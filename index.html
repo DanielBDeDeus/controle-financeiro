@@ -1,13 +1,51 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
+    <!-- ╔══════════════════════════════════════════════╗
+         ║           CONFIGURAÇÃO BASE DO DOCUMENTO     ║
+         ╠══════════════════════════════════════════════╣
+         ║ Metadados essenciais e identidade do HTML    ║
+         ╚══════════════════════════════════════════════╝ -->
+
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>controle-financeiro</title>
+
+    <!-- ╔══════════════════════════════════════════════╗
+         ║        ICONES (MATERIAL SYMBOLS GOOGLE)      ║
+         ╠══════════════════════════════════════════════╣
+         ║ Base para todos os botões com ícones do app  ║
+         ╚══════════════════════════════════════════════╝ -->
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+      rel="stylesheet"
+    />
+
+    <!-- ╔══════════════════════════════════════════════╗
+         ║             IDENTIDADE DO APLICATIVO         ║
+         ╠══════════════════════════════════════════════╣
+         ║ Nome exibido na aba do navegador             ║
+         ╚══════════════════════════════════════════════╝ -->
+
+    <title>DividimOS</title>
   </head>
+
   <body>
+    <!-- ╔══════════════════════════════════════════════╗
+         ║               ROOT DO REACT                  ║
+         ╠══════════════════════════════════════════════╣
+         ║ Container onde toda a aplicação é renderizada║
+         ╚══════════════════════════════════════════════╝ -->
+
     <div id="root"></div>
+
+    <!-- ╔══════════════════════════════════════════════╗
+         ║            ENTRY POINT DO FRONTEND           ║
+         ╠══════════════════════════════════════════════╣
+         ║ Arquivo inicial que carrega o React          ║
+         ╚══════════════════════════════════════════════╝ -->
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

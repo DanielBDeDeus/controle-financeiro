@@ -7,6 +7,9 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
 
   // ╔══════════════════════════════════════════════╗
   // ║              ESTADOS DO FORMULÁRIO           ║
+  // ╠══════════════════════════════════════════════╣
+  // ║ Estados responsáveis pelos campos base       ║
+  // ║ usados para cadastrar uma nova pessoa        ║
   // ╚══════════════════════════════════════════════╝
 
   const [nomePessoa, setNomePessoa] = useState("");
@@ -15,6 +18,9 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
 
   // ╔══════════════════════════════════════════════╗
   // ║         CONTROLE DE PAGAMENTO IRREGULAR      ║
+  // ╠══════════════════════════════════════════════╣
+  // ║ Permite marcar que, neste mês, a pessoa      ║
+  // ║ receberá em uma data diferente da usual      ║
   // ╚══════════════════════════════════════════════╝
 
   const [pagamentoIrregular, setPagamentoIrregular] = useState(false);
@@ -22,35 +28,74 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
 
   // ╔══════════════════════════════════════════════╗
   // ║          CONTROLE DE AJUSTE DE SALDO         ║
+  // ╠══════════════════════════════════════════════╣
+  // ║ Estados usados quando o usuário quer         ║
+  // ║ adicionar ou remover saldo manualmente       ║
   // ╚══════════════════════════════════════════════╝
 
   const [valorSaldo, setValorSaldo] = useState("");
   const [pessoaSelecionada, setPessoaSelecionada] = useState(null);
 
   // ╔══════════════════════════════════════════════╗
+  // ║         ESCALA GLOBAL DAS BARRAS DE SALDO    ║
+  // ╠══════════════════════════════════════════════╣
+  // ║ Define o maior saldo atual entre todas       ║
+  // ║ as pessoas para normalizar a largura         ║
+  // ║ das barras visuais                           ║
+  // ╚══════════════════════════════════════════════╝
+
+  const maiorSaldo = Math.max(...pessoas.map((p) => p.saldo || 0), 1);
+
+  // ╔══════════════════════════════════════════════╗
   // ║              CRIAÇÃO DE PESSOA               ║
+  // ╠══════════════════════════════════════════════╣
+  // ║ Valida os campos do formulário, converte     ║
+  // ║ o salário em número e cria um novo objeto    ║
+  // ║ de pessoa no estado global                   ║
   // ╚══════════════════════════════════════════════╝
 
   function salvarPessoa() {
+    // ╔══════════════════════════════════════════╗
+    // ║ NORMALIZA O NOME ANTES DE VALIDAR        ║
+    // ╚══════════════════════════════════════════╝
     const nome = nomePessoa.trim();
 
+    // ╔══════════════════════════════════════════╗
+    // ║ VALIDAÇÃO: NOME OBRIGATÓRIO              ║
+    // ╚══════════════════════════════════════════╝
     if (!nome) {
       setErro("Digite um nome.");
       return;
     }
 
+    // ╔══════════════════════════════════════════╗
+    // ║ VALIDAÇÃO: SALÁRIO OBRIGATÓRIO           ║
+    // ╚══════════════════════════════════════════╝
     if (!salarioPessoa) {
       setErro("Digite um salário.");
       return;
     }
 
+    // ╔══════════════════════════════════════════╗
+    // ║ VALIDAÇÃO: DATA CUSTOM OBRIGATÓRIA       ║
+    // ║ QUANDO HOUVER PAGAMENTO IRREGULAR        ║
+    // ╚══════════════════════════════════════════╝
     if (pagamentoIrregular && !dataPagamentoOverride) {
       setErro("Informe a data de pagamento deste mês.");
       return;
     }
 
+    // ╔══════════════════════════════════════════╗
+    // ║ CONVERSÃO DE TEXTO PARA NÚMERO           ║
+    // ╚══════════════════════════════════════════╝
     const salario = paraNumero(salarioPessoa);
 
+    // ╔══════════════════════════════════════════╗
+    // ║ MONTAGEM DO OBJETO DA NOVA PESSOA        ║
+    // ╠══════════════════════════════════════════╣
+    // ║ Observação: o saldo inicial entra igual  ║
+    // ║ ao salário informado                     ║
+    // ╚══════════════════════════════════════════╝
     const novaPessoa = {
       id: Date.now(),
       nome,
@@ -64,8 +109,14 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
         : null,
     };
 
+    // ╔══════════════════════════════════════════╗
+    // ║ ATUALIZA A LISTA GLOBAL DE PESSOAS       ║
+    // ╚══════════════════════════════════════════╝
     setPessoas((prev) => [...prev, novaPessoa]);
 
+    // ╔══════════════════════════════════════════╗
+    // ║ LIMPA O FORMULÁRIO APÓS O CADASTRO       ║
+    // ╚══════════════════════════════════════════╝
     setNomePessoa("");
     setSalarioPessoa("");
     setErro("");
@@ -75,6 +126,8 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
 
   // ╔══════════════════════════════════════════════╗
   // ║              EXCLUSÃO DE PESSOA              ║
+  // ╠══════════════════════════════════════════════╣
+  // ║ Remove a pessoa da lista atual               ║
   // ╚══════════════════════════════════════════════╝
 
   function excluirPessoa(id) {
@@ -83,24 +136,43 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
 
   // ╔══════════════════════════════════════════════╗
   // ║              ALTERAÇÃO DE SALDO              ║
+  // ╠══════════════════════════════════════════════╣
+  // ║ Soma ou subtrai um valor manualmente do      ║
+  // ║ saldo atual da pessoa selecionada            ║
   // ╚══════════════════════════════════════════════╝
 
   function alterarSaldo(id, valor) {
+    // ╔══════════════════════════════════════════╗
+    // ║ CONVERTE ENTRADA PARA NÚMERO DECIMAL     ║
+    // ╚══════════════════════════════════════════╝
     const numero = parseFloat(valor.replace(",", "."));
+
+    // ╔══════════════════════════════════════════╗
+    // ║ ABORTA SE O VALOR NÃO FOR VÁLIDO         ║
+    // ╚══════════════════════════════════════════╝
     if (isNaN(numero)) return;
 
+    // ╔══════════════════════════════════════════╗
+    // ║ ATUALIZA APENAS A PESSOA CORRESPONDENTE  ║
+    // ╚══════════════════════════════════════════╝
     setPessoas((prev) =>
       prev.map((p) =>
         p.id === id ? { ...p, saldo: (p.saldo || 0) + numero } : p
       )
     );
 
+    // ╔══════════════════════════════════════════╗
+    // ║ LIMPA A INTERFACE DE AJUSTE DE SALDO     ║
+    // ╚══════════════════════════════════════════╝
     setValorSaldo("");
     setPessoaSelecionada(null);
   }
 
   // ╔══════════════════════════════════════════════╗
   // ║        FILTRO DE CONTAS POR PESSOA           ║
+  // ╠══════════════════════════════════════════════╣
+  // ║ Retorna somente contas pendentes ligadas     ║
+  // ║ à pessoa informada                           ║
   // ╚══════════════════════════════════════════════╝
 
   function contasDaPessoa(id) {
@@ -109,12 +181,25 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
 
   // ╔══════════════════════════════════════════════╗
   // ║         IDENTIFICA PRÓXIMA CONTA             ║
+  // ╠══════════════════════════════════════════════╣
+  // ║ Ordena as contas pendentes por data e        ║
+  // ║ retorna a mais próxima do vencimento         ║
   // ╚══════════════════════════════════════════════╝
 
   function proximaConta(id) {
+    // ╔══════════════════════════════════════════╗
+    // ║ RECUPERA AS CONTAS DA PESSOA             ║
+    // ╚══════════════════════════════════════════╝
     const lista = contasDaPessoa(id);
+
+    // ╔══════════════════════════════════════════╗
+    // ║ SE NÃO HOUVER CONTA, NÃO HÁ PRÓXIMA      ║
+    // ╚══════════════════════════════════════════╝
     if (lista.length === 0) return null;
 
+    // ╔══════════════════════════════════════════╗
+    // ║ ORDENA PELA DATA MAIS PRÓXIMA            ║
+    // ╚══════════════════════════════════════════╝
     return lista.sort(
       (a, b) => new Date(a.dataVencimento) - new Date(b.dataVencimento)
     )[0];
@@ -128,6 +213,8 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
     <div style={pageStyle(temaAtivo)}>
       {/* ╔════════════════════════════════════════╗
           ║                HEADER                 ║
+          ╠════════════════════════════════════════╣
+          ║ Título da página + botão de retorno   ║
           ╚════════════════════════════════════════╝ */}
 
       <div style={{ marginBottom: 30 }}>
@@ -139,12 +226,17 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
       </div>
 
       {/* ╔════════════════════════════════════════╗
-          ║                FORMULÁRIO              ║
+          ║                FORMULÁRIO             ║
+          ╠════════════════════════════════════════╣
+          ║ Área de criação de nova pessoa        ║
           ╚════════════════════════════════════════╝ */}
 
       <div style={card}>
         <h2>Adicionar pessoa</h2>
 
+        {/* ╔════════════════════════════════════╗
+            ║ INPUT: NOME                      ║
+            ╚════════════════════════════════════╝ */}
         <input
           placeholder="Nome"
           value={nomePessoa}
@@ -152,6 +244,12 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
           style={input}
         />
 
+        {/* ╔════════════════════════════════════╗
+            ║ INPUT: SALÁRIO                   ║
+            ╠════════════════════════════════════╣
+            ║ Aceita apenas números e uma      ║
+            ║ vírgula decimal                  ║
+            ╚════════════════════════════════════╝ */}
         <input
           placeholder="Salário"
           value={salarioPessoa}
@@ -167,8 +265,10 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
 
         {/* ╔════════════════════════════════════╗
             ║ PAGAMENTO IRREGULAR (TOGGLE)     ║
+            ╠════════════════════════════════════╣
+            ║ Habilita um campo de data extra  ║
+            ║ para sobrescrever o recebimento  ║
             ╚════════════════════════════════════╝ */}
-
         <label style={{ marginTop: 10, display: "block" }}>
           <input
             type="checkbox"
@@ -180,8 +280,10 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
 
         {/* ╔════════════════════════════════════╗
             ║ DATA DE PAGAMENTO (OVERRIDE)     ║
+            ╠════════════════════════════════════╣
+            ║ Só aparece quando o toggle       ║
+            ║ acima estiver ativo              ║
             ╚════════════════════════════════════╝ */}
-
         {pagamentoIrregular && (
           <input
             type="date"
@@ -191,37 +293,62 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
           />
         )}
 
+        {/* ╔════════════════════════════════════╗
+            ║ AÇÃO: SALVAR PESSOA              ║
+            ╚════════════════════════════════════╝ */}
         <div style={{ marginTop: 10 }}>
           <button onClick={salvarPessoa} style={button}>
             + Adicionar
           </button>
         </div>
 
+        {/* ╔════════════════════════════════════╗
+            ║ FEEDBACK DE ERRO                 ║
+            ╚════════════════════════════════════╝ */}
         {erro && <p style={{ color: "red" }}>{erro}</p>}
       </div>
 
       {/* ╔════════════════════════════════════════╗
-          ║              LISTA DE PESSOAS          ║
+          ║              LISTA DE PESSOAS         ║
+          ╠════════════════════════════════════════╣
+          ║ Renderiza um card por pessoa         ║
           ╚════════════════════════════════════════╝ */}
 
       <div style={{ marginTop: 30 }}>
         {pessoas.map((p) => {
+          // ╔══════════════════════════════════╗
+          // ║ DADOS DERIVADOS DO CARD         ║
+          // ╚══════════════════════════════════╝
           const contasPessoa = contasDaPessoa(p.id);
           const proxima = proximaConta(p.id);
 
           return (
             <div key={p.id} style={personCard}>
+              {/* ╔══════════════════════════════╗
+                  ║ CABEÇALHO DO CARD          ║
+                  ╠══════════════════════════════╣
+                  ║ Nome, saldo atual e        ║
+                  ║ previsão de recebimento    ║
+                  ╚══════════════════════════════╝ */}
               <div>
                 <strong style={{ fontSize: 18 }}>{p.nome}</strong>
 
                 <div style={{ color: "#c3d0dc", marginTop: 4 }}>
-                  Saldo: <strong>R$ {p.saldo}</strong>
+                  Saldo:{" "}
+                  <strong>
+                    {p.saldo.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })}
+                  </strong>
                 </div>
 
                 {/* ╔══════════════════════════════╗
-                    ║ PREVISÃO DE RECEBIMENTO     ║
+                    ║ PREVISÃO DE RECEBIMENTO   ║
+                    ╠══════════════════════════════╣
+                    ║ Exibe quantos dias faltam ║
+                    ║ para o pagamento override ║
                     ╚══════════════════════════════╝ */}
-
                 {p.pagamentoIrregular && p.dataPagamentoOverride && (
                   <div style={{ fontSize: 12, opacity: 0.7 }}>
                     Recebe em{" "}
@@ -236,23 +363,30 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
 
               {/* ╔══════════════════════════════╗
                   ║      BARRA VISUAL DE SALDO   ║
+                  ╠══════════════════════════════╣
+                  ║ Largura proporcional ao      ║
+                  ║ maior saldo encontrado       ║
                   ╚══════════════════════════════╝ */}
-
               <div style={barContainer}>
                 <div
                   style={{
                     ...bar,
-                    width: `${Math.min(p.saldo / 50, 100)}%`,
+                    width: `${((p.saldo || 0) / maiorSaldo) * 100}%`,
                   }}
                 />
               </div>
 
               {/* ╔══════════════════════════════╗
                   ║      CONTROLE DE SALDO       ║
+                  ╠══════════════════════════════╣
+                  ║ Alterna entre estado normal  ║
+                  ║ e modo de ajuste manual      ║
                   ╚══════════════════════════════╝ */}
-
               {pessoaSelecionada === p.id ? (
                 <div>
+                  {/* ╔══════════════════════════╗
+                      ║ INPUT: VALOR DO AJUSTE  ║
+                      ╚══════════════════════════╝ */}
                   <input
                     placeholder="Valor"
                     value={valorSaldo}
@@ -260,6 +394,9 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
                     style={input}
                   />
 
+                  {/* ╔══════════════════════════╗
+                      ║ AÇÕES: SOMAR / SUBTRAIR ║
+                      ╚══════════════════════════╝ */}
                   <div style={{ display: "flex", gap: 8 }}>
                     <button
                       onClick={() => alterarSaldo(p.id, valorSaldo)}
@@ -269,9 +406,7 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
                     </button>
 
                     <button
-                      onClick={() =>
-                        alterarSaldo(p.id, "-" + valorSaldo)
-                      }
+                      onClick={() => alterarSaldo(p.id, "-" + valorSaldo)}
                       style={secondary}
                     >
                       - Remover
@@ -279,6 +414,9 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
                   </div>
                 </div>
               ) : (
+                // ╔════════════════════════════╗
+                // ║ BOTÃO: ENTRAR EM AJUSTE   ║
+                // ╚════════════════════════════╝
                 <button
                   onClick={() => setPessoaSelecionada(p.id)}
                   style={secondary}
@@ -289,8 +427,10 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
 
               {/* ╔══════════════════════════════╗
                   ║        CONTAS ASSOCIADAS     ║
+                  ╠══════════════════════════════╣
+                  ║ Resume quantidade de contas  ║
+                  ║ e mostra a próxima           ║
                   ╚══════════════════════════════╝ */}
-
               <div style={{ marginTop: 10 }}>
                 <div>Contas pendentes: {contasPessoa.length}</div>
 
@@ -301,6 +441,9 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
                 )}
               </div>
 
+              {/* ╔══════════════════════════════╗
+                  ║      AÇÃO: EXCLUIR PESSOA    ║
+                  ╚══════════════════════════════╝ */}
               <button onClick={() => excluirPessoa(p.id)} style={danger}>
                 Excluir
               </button>
@@ -314,8 +457,13 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
 
 // ╔══════════════════════════════════════════════╗
 // ║                ESTILOS GERAIS                ║
+// ╠══════════════════════════════════════════════╣
+// ║ Blocos de estilo reutilizados pela página    ║
 // ╚══════════════════════════════════════════════╝
 
+// ╔══════════════════════════════════════════════╗
+// ║ ESTILO: PÁGINA BASE                          ║
+// ╚══════════════════════════════════════════════╝
 const pageStyle = (temaAtivo = {}) => ({
   minHeight: "100vh",
   padding: 40,
@@ -323,6 +471,9 @@ const pageStyle = (temaAtivo = {}) => ({
   color: temaAtivo?.title || "#fff",
 });
 
+// ╔══════════════════════════════════════════════╗
+// ║ ESTILO: CARD DO FORMULÁRIO                   ║
+// ╚══════════════════════════════════════════════╝
 const card = {
   maxWidth: 400,
   padding: 20,
@@ -334,6 +485,9 @@ const card = {
   boxShadow: "0 12px 28px rgba(0,0,0,0.25)",
 };
 
+// ╔══════════════════════════════════════════════╗
+// ║ ESTILO: INPUT PADRÃO                         ║
+// ╚══════════════════════════════════════════════╝
 const input = {
   width: "100%",
   padding: "12px 14px",
@@ -344,6 +498,9 @@ const input = {
   color: "#eef5fb",
 };
 
+// ╔══════════════════════════════════════════════╗
+// ║ ESTILO: BOTÃO PRIMÁRIO                       ║
+// ╚══════════════════════════════════════════════╝
 const button = {
   padding: "10px 16px",
   borderRadius: 12,
@@ -354,6 +511,9 @@ const button = {
   cursor: "pointer",
 };
 
+// ╔══════════════════════════════════════════════╗
+// ║ ESTILO: BOTÃO SECUNDÁRIO                     ║
+// ╚══════════════════════════════════════════════╝
 const secondary = {
   marginTop: 10,
   padding: "10px 14px",
@@ -364,6 +524,9 @@ const secondary = {
   cursor: "pointer",
 };
 
+// ╔══════════════════════════════════════════════╗
+// ║ ESTILO: BOTÃO DE PERIGO                      ║
+// ╚══════════════════════════════════════════════╝
 const danger = {
   marginTop: 10,
   padding: 10,
@@ -373,6 +536,9 @@ const danger = {
   border: "none",
 };
 
+// ╔══════════════════════════════════════════════╗
+// ║ ESTILO: BOTÃO VOLTAR                         ║
+// ╚══════════════════════════════════════════════╝
 const backButton = {
   marginTop: 10,
   padding: 10,
@@ -382,6 +548,9 @@ const backButton = {
   border: "none",
 };
 
+// ╔══════════════════════════════════════════════╗
+// ║ ESTILO: CARD DE CADA PESSOA                  ║
+// ╚══════════════════════════════════════════════╝
 const personCard = {
   padding: 20,
   marginBottom: 16,
@@ -392,6 +561,9 @@ const personCard = {
   boxShadow: "0 12px 28px rgba(0,0,0,0.25)",
 };
 
+// ╔══════════════════════════════════════════════╗
+// ║ ESTILO: CONTAINER DA BARRA                   ║
+// ╚══════════════════════════════════════════════╝
 const barContainer = {
   height: 8,
   background: "rgba(255,255,255,0.1)",
@@ -399,6 +571,9 @@ const barContainer = {
   marginTop: 10,
 };
 
+// ╔══════════════════════════════════════════════╗
+// ║ ESTILO: BARRA DE SALDO                       ║
+// ╚══════════════════════════════════════════════╝
 const bar = {
   height: "100%",
   background: "#48b9ff",

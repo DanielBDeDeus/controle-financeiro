@@ -5,6 +5,8 @@ import PessoasPage from "./PessoasPage";
 
 // ╔══════════════════════════════════════════════╗
 // ║                  GRÁFICO                     ║
+// ╠══════════════════════════════════════════════╣
+// ║ Componentes de visualização (Recharts)       ║
 // ╚══════════════════════════════════════════════╝
 import {
   BarChart,
@@ -18,9 +20,12 @@ import {
   LabelList
 } from "recharts";
 
-// ==============================
-// CHAVES DO LOCALSTORAGE
-// ==============================
+// ╔══════════════════════════════════════════════╗
+// ║         CHAVES DO LOCALSTORAGE               ║
+// ╠══════════════════════════════════════════════╣
+// ║ Centraliza todas as chaves usadas para       ║
+// ║ persistência no navegador                    ║
+// ╚══════════════════════════════════════════════╝
 const STORAGE_KEYS = {
   pessoas: "controle-financeiro:pessoas",
   gastoDebito: "controle-financeiro:gasto-debito",
@@ -33,7 +38,12 @@ const STORAGE_KEYS = {
 };
 
 // ╔══════════════════════════════════════════════╗
-// ║             TEMAS PREDEFINIDOS               ║
+// ║           SISTEMA DE TEMAS DINÂMICOS         ║
+// ╠══════════════════════════════════════════════╣
+// ║ Cada pessoa pode possuir um tema próprio     ║
+// ║ Household mistura cores automaticamente      ║
+// ║                                              ║
+// ║⚠ Alterar estrutura aqui quebra UI inteira   ║
 // ╚══════════════════════════════════════════════╝
 const THEMES = {
   cassette_neon: {
@@ -227,7 +237,9 @@ const THEMES = {
 };
 
 // ╔══════════════════════════════════════════════╗
-// ║         FUNÇÕES AUXILIARES DE LEITURA        ║
+// ║        FUNÇÕES AUXILIARES DE STORAGE         ║
+// ╠══════════════════════════════════════════════╣
+// ║ Leitura e parsing seguro do localStorage     ║
 // ╚══════════════════════════════════════════════╝
 
 function lerTextoStorage(chave) {
@@ -256,6 +268,12 @@ function lerJsonStorage(chave, valorPadrao) {
     return valorPadrao;
   }
 }
+// ╔══════════════════════════════════════════════╗
+// ║         FORMATAÇÃO PADRÃO DE VALORES         ║
+// ╠══════════════════════════════════════════════╣
+// ║ Converte qualquer entrada para BRL seguro    ║
+// ║ Evita NaN e inconsistências visuais          ║
+// ╚══════════════════════════════════════════════╝
 function formatarMoeda(valor) {
   const numeroSeguro = paraNumero(valor);
 
@@ -278,7 +296,26 @@ function isContaAtrasada(conta) {
 
   return vencimento < hoje;
 }
-
+// ╔══════════════════════════════════════════════╗
+// ║        SISTEMA DE URGÊNCIA DE CONTAS         ║
+// ╠══════════════════════════════════════════════╣
+// ║ Define prioridade visual baseada na data     ║
+// ║ Usado diretamente para styling dinâmico      ║
+// ║                                              ║
+// ║ retorno: normal | medio | alto | critico     ║
+// ║          | atrasado                          ║
+// ╚══════════════════════════════════════════════╝
+// ╔══════════════════════════════════════════════╗
+// ║          REGRAS DE URGÊNCIA DE CONTAS        ║
+// ╠══════════════════════════════════════════════╣
+// ║ atraso        → data vencida já passou       ║
+// ║ até 1 dia     → crítico (pagar AGORA)        ║
+// ║ até 3 dias    → alto                         ║
+// ║ até 7 dias    → médio                        ║
+// ║ acima disso   → normal                       ║
+// ║                                              ║
+// ║ ⚠ Baseado em diferença de dias (diffDias)    ║
+// ╚══════════════════════════════════════════════╝
 function getContaUrgencia(conta) {
   if (conta.pago) return "pago";
 
@@ -320,12 +357,28 @@ function getUrgenciaFechamento(cartao) {
 
   return "normal";
 }
-
+// ╔══════════════════════════════════════════════╗
+// ║         SISTEMA DE CONFIRMAÇÃO DE RESET      ║
+// ╠══════════════════════════════════════════════╣
+// ║ Usuário precisa clicar múltiplas vezes       ║
+// ║ Evita reset acidental destrutivo             ║
+// ╚══════════════════════════════════════════════╝
 const RESET_MESSAGES = [
   "☢ Tem certeza que quer apagar tudo?",
   "☢ Isso vai apagar TODOS os dados salvos.",
   "☢ ÚLTIMA CHANCE. Apagar tudo mesmo?",
 ];
+// ╔══════════════════════════════════════════════╗
+// ║               COMPONENTE PRINCIPAL           ║
+// ╠══════════════════════════════════════════════╣
+// ║ Orquestra todo o sistema financeiro          ║
+// ║                                              ║
+// ║ Responsabilidades:                           ║
+// ║ - Estados globais (gastos, contas, pessoas)  ║
+// ║ - Persistência                               ║
+// ║ - Cálculos derivados                         ║
+// ║ - Renderização do dashboard                  ║
+// ╚══════════════════════════════════════════════╝
 function Dashboard({ pessoas, setPessoas, contas, setContas, temaAtivo, perfilAtivo, setPerfilAtivo }) {
 const navigate = useNavigate();
 // ╔══════════════════════════════════════════════╗
@@ -343,7 +396,10 @@ const [resetEtapa, setResetEtapa] = useState(
 );
 
 // ╔══════════════════════════════════════════════╗
-// ║               STATES DE PESSOAS              ║
+// ║           (RESERVADO - FUTURO)               ║
+// ╠══════════════════════════════════════════════╣
+// ║ Espaço para lógica futura relacionada a      ║
+// ║ manipulação direta de pessoas                ║
 // ╚══════════════════════════════════════════════╝
 
 
@@ -390,6 +446,8 @@ const [layout, setLayout] = useState([
   const [tipoCartao, setTipoCartao] = useState("credito");
   const [diaFechamento, setDiaFechamento] = useState("");
   const [erroCartao, setErroCartao] = useState("");
+  const [limiteCartao, setLimiteCartao] = useState("");
+  const [limiteUsado, setLimiteUsado] = useState("");
 
 // ╔══════════════════════════════════════════════╗
 // ║                STATES DE GASTOS              ║
@@ -409,10 +467,14 @@ const [layout, setLayout] = useState([
 
 // ╔══════════════════════════════════════════════╗
 // ║           STATES DE CONTAS (BOLETOS)         ║
+// ╠══════════════════════════════════════════════╣
+// ║ Controle de contas, vencimentos e pagamento  ║
 // ╚══════════════════════════════════════════════╝
 
 // ╔══════════════════════════════════════════════╗
 // ║        HISTÓRICO DE MOVIMENTAÇÕES            ║
+// ╠══════════════════════════════════════════════╣
+// ║ Log de entradas/saídas manuais de saldo      ║
 // ╚══════════════════════════════════════════════╝
   const [movimentacoes, setMovimentacoes] = useState([]);
   const [valorSaldoInput, setValorSaldoInput] = useState("");
@@ -426,6 +488,8 @@ const [layout, setLayout] = useState([
 
 // ╔══════════════════════════════════════════════╗
 // ║            EFEITOS DE PERSISTÊNCIA           ║
+// ╠══════════════════════════════════════════════╣
+// ║ Sincroniza estados com localStorage          ║
 // ╚══════════════════════════════════════════════╝
 
   useEffect(() => {
@@ -488,14 +552,17 @@ useEffect(() => {
 
 // ╔══════════════════════════════════════════════╗
 // ║               FUNÇÕES DE PESSOAS             ║
+// ╠══════════════════════════════════════════════╣
+// ║ CRUD + regras de consistência de pessoas     ║
 // ╚══════════════════════════════════════════════╝
-
-
-
-
-
-
   function excluirPessoa(idPessoa) {
+// ╔══════════════════════════════════════════════╗
+// ║          EXCLUSÃO EM CASCATA (PESSOA)        ║
+// ╠══════════════════════════════════════════════╣
+// ║ Remove pessoa + gastos associados            ║
+// ║                                              ║
+// ║ ⚠ Impacta saldo global e histórico           ║
+// ╚══════════════════════════════════════════════╝
     setPessoas((pessoasAnteriores) =>
       pessoasAnteriores.filter((pessoa) => pessoa.id !== idPessoa)
     );
@@ -541,14 +608,27 @@ useEffect(() => {
     );
   }
 
+
 // ╔══════════════════════════════════════════════╗
-// ║     ADICIONAR / REMOVER SALDO (COM LOG)      ║
+// ║     ALTERAÇÃO DE SALDO COM RASTREABILIDADE   ║
+// ╠══════════════════════════════════════════════╣
+// ║ Atualiza saldo E cria um "gasto especial"    ║
+// ║                                              ║
+// ║ Tipo: ajuste_manual                          ║
+// ║                                              ║
+// ║ ⚠ Mantém consistência visual no sistema      ║
 // ╚══════════════════════════════════════════════╝
 function alterarSaldoPessoa(idPessoa, valor, comentario = "") {
   const numero = parseFloat(String(valor).replace(",", "."));
 
   if (isNaN(numero)) return;
 
+  const pessoa = pessoas.find(p => p.id === idPessoa);
+  if (!pessoa) return;
+
+  // ╔══════════════════════════════════════════════╗
+  // ║         ATUALIZA SALDO DIRETAMENTE           ║
+  // ╚══════════════════════════════════════════════╝
   setPessoas((prev) =>
     prev.map((p) =>
       p.id === idPessoa
@@ -557,6 +637,34 @@ function alterarSaldoPessoa(idPessoa, valor, comentario = "") {
     )
   );
 
+  // ╔══════════════════════════════════════════════╗
+  // ║      CRIA REGISTRO VISUAL COMO "GASTO"       ║
+  // ╠══════════════════════════════════════════════╣
+  // ║ Permite rastrear ajustes dentro da UI        ║
+  // ╚══════════════════════════════════════════════╝
+  const ajusteComoGasto = {
+    id: Date.now(),
+    nome: comentario || "Ajuste manual de saldo",
+    valor: Math.abs(numero),
+    tipo: numero < 0 ? "debito" : "credito",
+    cartaoNome: "Ajuste manual",
+    pessoaId: pessoa.id,
+    pessoaNome: pessoa.nome,
+
+    // ╔══════════════════════════════════════════════╗
+    // ║            TAG ESPECIAL DO SISTEMA           ║
+    // ╚══════════════════════════════════════════════╝
+    origem: "ajuste_manual",
+  };
+
+  const novaLista = [ajusteComoGasto, ...gastos];
+  setGastos(novaLista);
+
+  recalcularTotais(novaLista);
+
+  // ╔══════════════════════════════════════════════╗
+  // ║            LOG DE AUDITORIA (INTERNO)        ║
+  // ╚══════════════════════════════════════════════╝
   const novaMovimentacao = {
     id: Date.now(),
     pessoaId: idPessoa,
@@ -583,6 +691,10 @@ if (tipoCartao === "credito" && !diaFechamento) {
   setErroCartao("Informe o dia de fechamento.");
   return;
 }
+if (tipoCartao === "credito" && !limiteCartao) {
+  setErroCartao("Informe o limite do cartão.");
+  return;
+}
     const duplicado = cartoes.some(
       (cartaoExistente) =>
         cartaoExistente.nome.toLowerCase() === nomeNormalizado &&
@@ -600,16 +712,69 @@ if (tipoCartao === "credito" && !diaFechamento) {
   tipo: tipoCartao,
   diaFechamento:
     tipoCartao === "credito" ? Number(diaFechamento) : null,
+
+  limite:
+    tipoCartao === "credito"
+      ? paraNumero(limiteCartao)
+      : null,
+
+  limiteUsado:
+    tipoCartao === "credito"
+      ? paraNumero(limiteUsado)
+      : 0,
 };
 
     setCartoes([...cartoes, novoCartao]);
     setNomeCartao("");
     setErroCartao("");
     setDiaFechamento("");
+    setLimiteCartao("");
+    setLimiteUsado("");
   }
+// ╔══════════════════════════════════════════════╗
+// ║          FUNÇÃO: EXCLUIR CARTÃO              ║
+// ╠══════════════════════════════════════════════╣
+// ║ Remove um cartão do sistema e também         ║
+// ║ remove todos os gastos vinculados a ele      ║
+// ╚══════════════════════════════════════════════╝
+function excluirCartao(idCartao) {
+// ╔══════════════════════════════════════════════╗
+// ║          EXCLUSÃO DE CARTÃO (CRÍTICO)        ║
+// ╠══════════════════════════════════════════════╣
+// ║ Remove cartão + TODOS os gastos vinculados   ║
+// ║                                              ║
+// ║ ⚠ Operação destrutiva irreversível           ║
+// ╚══════════════════════════════════════════════╝
+  const cartao = cartoes.find(c => c.id === idCartao);
+  if (!cartao) return;
+
+  // ╔══════════════════════════════════════════════╗
+  // ║   FILTRA GASTOS QUE NÃO USAM ESTE CARTÃO     ║
+  // ╚══════════════════════════════════════════════╝
+  const gastosRestantes = gastos.filter(
+    (g) => g.cartaoNome !== cartao.nome
+  );
+
+  // ╔══════════════════════════════════════════════╗
+  // ║        REMOVE CARTÃO DA LISTA                ║
+  // ╚══════════════════════════════════════════════╝
+  setCartoes(cartoes.filter(c => c.id !== idCartao));
+
+  // ╔══════════════════════════════════════════════╗
+  // ║     ATUALIZA LISTA DE GASTOS                ║
+  // ╚══════════════════════════════════════════════╝
+  setGastos(gastosRestantes);
+
+  // ╔══════════════════════════════════════════════╗
+  // ║      RECALCULA TOTAIS DO SISTEMA            ║
+  // ╚══════════════════════════════════════════════╝
+  recalcularTotais(gastosRestantes);
+}
 
 // ╔══════════════════════════════════════════════╗
 // ║                FUNÇÕES DE GASTOS             ║
+// ╠══════════════════════════════════════════════╣
+// ║ Criação, edição, exclusão e recalculo        ║
 // ╚══════════════════════════════════════════════╝
 
   function limparFormularioGasto() {
@@ -620,7 +785,15 @@ if (tipoCartao === "credito" && !diaFechamento) {
     setGastoEmEdicaoId(null);
     setErroGasto("");
   }
-
+// ╔══════════════════════════════════════════════╗
+// ║        RECÁLCULO GLOBAL DE FINANÇAS          ║
+// ╠══════════════════════════════════════════════╣
+// ║ Fonte única da verdade para:                 ║
+// ║ - total débito                               ║
+// ║ - total crédito                              ║
+// ║                                              ║
+// ║ ⚠ Toda alteração passa por aqui              ║
+// ╚══════════════════════════════════════════════╝
   function recalcularTotais(listaDeGastos) {
     const totalDebito = listaDeGastos
       .filter((gasto) => gasto.tipo === "debito")
@@ -633,7 +806,17 @@ if (tipoCartao === "credito" && !diaFechamento) {
     setGastoDebito(totalDebito);
     setFaturaAtual(totalCredito);
   }
-
+// ╔══════════════════════════════════════════════╗
+// ║        FLUXO PRINCIPAL DE GASTOS             ║
+// ╠══════════════════════════════════════════════╣
+// ║ 1. Validação                                 ║
+// ║ 2. Identificação de cartão/pessoa            ║
+// ║ 3. Edição OU criação                         ║
+// ║ 4. Impacto no saldo (débito)                 ║
+// ║ 5. Recalculo global                          ║
+// ║                                              ║
+// ║ ⚠ Função crítica do sistema                 ║
+// ╚══════════════════════════════════════════════╝
   function adicionarGasto() {
   const nomeNormalizado = nomeGasto.trim();
 
@@ -676,6 +859,14 @@ if (tipoCartao === "credito" && !diaFechamento) {
   }
 
   const valor = paraNumero(valorGasto);
+// ╔══════════════════════════════════════════════╗
+// ║           IMPACTO FINANCEIRO DO GASTO        ║
+// ╠══════════════════════════════════════════════╣
+// ║ Débito  → reduz saldo imediatamente          ║
+// ║ Crédito → entra apenas na fatura             ║
+// ║                                              ║
+// ║ ⚠ Afeta saldo OU fatura dependendo do tipo   ║
+// ╚══════════════════════════════════════════════╝
 
 // ╔══════════════════════════════════════════════╗
 // ║              EDIÇÃO DE GASTO                 ║
@@ -817,6 +1008,8 @@ function editarGasto(gasto) {
 
 // ╔══════════════════════════════════════════════╗
 // ║                FUNÇÕES DE CONTAS             ║
+// ╠══════════════════════════════════════════════╣
+// ║ Controle de boletos e impacto no saldo       ║
 // ╚══════════════════════════════════════════════╝
 
 function adicionarConta() {
@@ -900,11 +1093,29 @@ function marcarContaComoPaga(idConta) {
 
   setContas(contasAtualizadas);
 }
-
+// ╔══════════════════════════════════════════════╗
+// ║          FUNÇÃO: EXCLUIR CONTA               ║
+// ╠══════════════════════════════════════════════╣
+// ║ Remove uma conta (boleto) do sistema         ║
+// ║ sem afetar diretamente o saldo               ║
+// ╚══════════════════════════════════════════════╝
+function excluirConta(idConta) {
+  setContas(contas.filter(c => c.id !== idConta));
+}
 // ╔══════════════════════════════════════════════╗
 // ║           CÁLCULOS DE PERFIL ATIVO           ║
+// ╠══════════════════════════════════════════════╣
+// ║ Filtragem e agregação baseada no perfil      ║
 // ╚══════════════════════════════════════════════╝
 
+// ╔══════════════════════════════════════════════╗
+// ║        SISTEMA DE VISÃO (HOUSEHOLD vs USER)  ║
+// ╠══════════════════════════════════════════════╣
+// ║ Household → mostra tudo agregado             ║
+// ║ Perfil → filtra por pessoa específica        ║
+// ║                                              ║
+// ║ Afeta TODOS os cálculos abaixo               ║
+// ╚══════════════════════════════════════════════╝
   const ehHousehold = perfilAtivo === "household";
 
   const pessoaAtiva = useMemo(() => {
@@ -942,20 +1153,27 @@ function marcarContaComoPaga(idConta) {
   }, [gastosFiltrados]);
 
   const salarioTotalFiltrado = useMemo(() => {
-    if (ehHousehold) {
-      return pessoas.reduce(
-        (acumulador, pessoa) => acumulador + paraNumero(pessoa.salario),
-        0
+  if (ehHousehold) {
+    return pessoas.reduce((acc, pessoa) => {
+      return acc + (
+        salarioDisponivel(pessoa)
+          ? paraNumero(pessoa.salario)
+          : 0
       );
-    }
+    }, 0);
+  }
 
-    return pessoaAtiva ? paraNumero(pessoaAtiva.salario) : 0;
-  }, [ehHousehold, pessoaAtiva, pessoas]);
+  if (!pessoaAtiva) return 0;
 
-  const saldoTotalPessoas = pessoas.reduce(
-  (acc, pessoa) => acc + (pessoa.saldo || 0),
-  0
-);
+  return salarioDisponivel(pessoaAtiva)
+    ? paraNumero(pessoaAtiva.salario)
+    : 0;
+
+}, [ehHousehold, pessoaAtiva, pessoas]);
+
+  const saldoTotalPessoas = pessoas.reduce((acc, pessoa) => {
+  return acc + (pessoa.saldo || 0);
+}, 0);
   const totalContasPendentes = contas
   .filter((conta) => !conta.pago)
   .reduce((acc, conta) => acc + paraNumero(conta.valor), 0);
@@ -971,7 +1189,15 @@ function marcarContaComoPaga(idConta) {
 // ╚══════════════════════════════════════════════╝
   return new Date(a.dataVencimento) - new Date(b.dataVencimento);
 });
-
+// ╔══════════════════════════════════════════════╗
+// ║           CÁLCULO DE SALDO DISPONÍVEL        ║
+// ╠══════════════════════════════════════════════╣
+// ║ saldo atual - contas pendentes               ║
+// ║                                              ║
+// ║ Representa dinheiro REAL utilizável          ║
+// ║                                              ║
+// ║ ⚠ Não inclui crédito futuro                  ║
+// ╚══════════════════════════════════════════════╝
 const saldoDisponivel =
   saldoTotalPessoas -
   totalContasPendentes;
@@ -980,11 +1206,20 @@ const totalContasPagas = contas
   .filter((c) => c.pago)
   .reduce((acc, c) => acc + paraNumero(c.valor), 0);
 
-const totalSalario = pessoas.reduce(
-  (acc, p) => acc + paraNumero(p.salario),
-  0
-);
-
+const totalSalario = pessoas.reduce((acc, p) => {
+  return acc + (
+    salarioDisponivel(p)
+      ? paraNumero(p.salario)
+      : 0
+  );
+}, 0);
+// ╔══════════════════════════════════════════════╗
+// ║             DADOS DO GRÁFICO                 ║
+// ╠══════════════════════════════════════════════╣
+// ║ Cada item representa uma métrica financeira  ║
+// ║                                              ║
+// ║ ⚠ Ordem deve bater com array COLORS          ║
+// ╚══════════════════════════════════════════════╝
 const dataGrafico = [
   { name: "Salário", value: totalSalario },
   { name: "Débito", value: paraNumero(gastoDebitoFiltrado) || 0 },
@@ -994,19 +1229,21 @@ const dataGrafico = [
 
 console.log("PESSOAS:", pessoas);
 
-const dadosSaldoPessoas = pessoas.map((p) => ({
-  name: p.nome,
-  saldo: p.saldo || 0,
-}));
+const dadosSaldoPessoas = pessoas.map((p) => {
+  const saldo = p.saldo || 0;
 
-  // ╔══════════════════════════════════════════════╗
-  // ║           CORES DO GRÁFICO                   ║
-  // ╠══════════════════════════════════════════════╣
-  // ║ salário                                      ║
-  // ║ débito                                       ║
-  // ║ crédito                                      ║
-  // ║ contas                                       ║
-  // ╚══════════════════════════════════════════════╝
+  return {
+    name: p.nome,
+    saldo,
+    saldoNormalizado: Math.min(saldo, 5000), // clamp visual
+  };
+});
+
+// ╔══════════════════════════════════════════════╗
+// ║           CORES DO GRÁFICO                   ║
+// ╠══════════════════════════════════════════════╣
+// ║ Ordem: salário, débito, crédito, contas      ║
+// ╚══════════════════════════════════════════════╝
 const COLORS = [
   "#22c55e",
   "#ef4444",
@@ -1031,6 +1268,13 @@ const COLORS = [
       alterarTemaDaPessoa(pessoaAtiva.id, novoTema);
     }
   }
+// ╔══════════════════════════════════════════════╗
+// ║              RESET TOTAL DO SISTEMA          ║
+// ╠══════════════════════════════════════════════╣
+// ║ Remove TODOS os dados (estado + storage)     ║
+// ║                                              ║
+// ║ ⚠ Irreversível                              ║
+// ╚══════════════════════════════════════════════╝
   function limparTudo() {
   setPessoas([]);
 
@@ -1057,6 +1301,13 @@ const COLORS = [
     window.localStorage.removeItem(chave);
   });
   setTimeout(() => {
+// ╔══════════════════════════════════════════════╗
+// ║           RESET FORÇADO DE ESTADO            ║
+// ╠══════════════════════════════════════════════╣
+// ║ Garante limpeza completa após reset          ║
+// ║                                              ║
+// ║ ⚠ Evita inconsistências de estado            ║
+// ╚══════════════════════════════════════════════╝
   window.location.reload();
 }, 50);
 }
@@ -1071,7 +1322,13 @@ function lidarComResetTotal() {
 }
 
 const valorTemaSelecionado = pessoaAtiva?.tema || "cassette_neon";
-
+// ╔══════════════════════════════════════════════╗
+// ║             SISTEMA DE ESTILOS               ║
+// ╠══════════════════════════════════════════════╣
+// ║ Todos os estilos dependem do tema ativo      ║
+// ║                                              ║
+// ║ ⚠ Alterar aqui impacta TODA a UI             ║
+// ╚══════════════════════════════════════════════╝
   const styles = useMemo(
     () => ({
       container: {
@@ -1522,6 +1779,26 @@ footer: {
     }),
     [temaAtivo]
   );
+
+// ╔══════════════════════════════════════════════╗
+// ║        REGRA DE DISPONIBILIDADE DE SALÁRIO   ║
+// ╠══════════════════════════════════════════════╣
+// ║ Salário só entra no cálculo após pagamento   ║
+// ║                                              ║
+// ║ Suporta override manual (pagamento irregular)║
+// ║                                              ║
+// ║ ⚠ Evita inflar saldo antes da data correta   ║
+// ╚══════════════════════════════════════════════╝
+function salarioDisponivel(pessoa) {
+  if (pessoa.pagamentoIrregular && pessoa.dataPagamentoOverride) {
+    const hoje = new Date();
+    const pagamento = new Date(pessoa.dataPagamentoOverride);
+
+    return pagamento <= hoje;
+  }
+
+  return true;
+}
     return (
   <div style={styles.container}>
       <div style={styles.shell}>
@@ -1771,19 +2048,40 @@ footer: {
   </div>
 
   <div style={{ marginBottom: 12 }}>
-    <ResponsiveContainer width="100%" height={140}>
-      <BarChart data={dadosSaldoPessoas}>
-        <XAxis dataKey="name" />
-        <YAxis />
-        <Tooltip formatter={(v) => formatarMoeda(v)} />
+<ResponsiveContainer width="100%" height={160}>
+  <BarChart
+    data={dadosSaldoPessoas}
+    layout="vertical"
+    margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
+  >
+    <XAxis type="number" hide />
+    <YAxis
+      type="category"
+      dataKey="name"
+      width={80}
+      tick={{ fill: "#94a3b8", fontSize: 12 }}
+    />
 
-        <Bar dataKey="saldo" radius={[10, 10, 0, 0]}>
-          {dadosSaldoPessoas.map((_, index) => (
-            <Cell key={index} fill={COLORS[index % COLORS.length]} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
+    <Tooltip formatter={(v, _, item) => formatarMoeda(item.payload.saldo)} />
+
+    <Bar
+// ╔══════════════════════════════════════════════╗
+// ║         NORMALIZAÇÃO VISUAL DO GRÁFICO       ║
+// ╠══════════════════════════════════════════════╣
+// ║ Evita barras desproporcionais                ║
+// ║                                              ║
+// ║ clamp: 0 → 100%                             ║
+// ╚══════════════════════════════════════════════╝
+      dataKey="saldoNormalizado"
+      radius={[8, 8, 8, 8]}
+      barSize={14}
+    >
+      {dadosSaldoPessoas.map((_, index) => (
+        <Cell key={index} fill={COLORS[index % COLORS.length]} />
+      ))}
+    </Bar>
+  </BarChart>
+</ResponsiveContainer>
   </div>
 
   {pessoas.map((pessoa) => (
@@ -1927,26 +2225,46 @@ footer: {
               <option value="debito">Débito</option>
             </select>
             {tipoCartao === "credito" && (
-  <input
-  type="date"
-  value={
-    diaFechamento
-      ? `2024-01-${String(diaFechamento).padStart(2, "0")}`
-      : ""
-  }
-  onChange={(e) => {
-    const date = e.target.value;
+  <>
+    <input
+      type="date"
+      value={
+        diaFechamento
+          ? `2024-01-${String(diaFechamento).padStart(2, "0")}`
+          : ""
+      }
+      onChange={(e) => {
+        const date = e.target.value;
 
-    if (!date) {
-      setDiaFechamento("");
-      return;
-    }
+        if (!date) {
+          setDiaFechamento("");
+          return;
+        }
 
-    const day = new Date(date).getDate();
-    setDiaFechamento(day);
-  }}
-  style={styles.input}
-/>
+        const day = new Date(date).getDate();
+        setDiaFechamento(day);
+      }}
+      style={styles.input}
+    />
+
+    <input
+      placeholder="Limite total (ex: 5000)"
+      value={limiteCartao}
+      onChange={(e) =>
+        setLimiteCartao(e.target.value.replace(/[^\d,]/g, ""))
+      }
+      style={styles.input}
+    />
+
+    <input
+      placeholder="Já utilizado (ex: 1200)"
+      value={limiteUsado}
+      onChange={(e) =>
+        setLimiteUsado(e.target.value.replace(/[^\d,]/g, ""))
+      }
+      style={styles.input}
+    />
+  </>
 )}
 
             <button
@@ -2106,6 +2424,21 @@ footer: {
                   <div style={styles.itemLinhaSuperior}>
                     <span style={styles.itemText}>
 {gasto.nome} · {formatarMoeda(gasto.valor)} · {gasto.cartaoNome} · {gasto.pessoaNome}
+
+{gasto.origem === "ajuste_manual" && (
+  <span
+    style={{
+      marginLeft: 8,
+      fontSize: 11,
+      padding: "2px 6px",
+      borderRadius: 6,
+      background: "rgba(255,255,255,0.2)",
+      border: "1px solid rgba(255,255,255,0.3)",
+    }}
+  >
+    ajuste manual
+  </span>
+)}
                     </span>
 
                     <span
@@ -2247,12 +2580,23 @@ style={{
 </div>
 
 {!conta.pago && (
+  <div style={{ display: "flex", gap: 8 }}>
+  {!conta.pago && (
+    <button
+      onClick={() => marcarContaComoPaga(conta.id)}
+      style={styles.actionButtonSmall}
+    >
+      Pagar
+    </button>
+  )}
+
   <button
-    onClick={() => marcarContaComoPaga(conta.id)}
-    style={styles.actionButtonSmall}
+    onClick={() => excluirConta(conta.id)}
+    style={styles.actionButtonDanger}
   >
-    Pagar
+    Excluir
   </button>
+</div>
 )}
 
 {conta.pago && (
@@ -2300,6 +2644,14 @@ style={{
  
 
 }
+// ╔══════════════════════════════════════════════╗
+// ║             ROOT DA APLICAÇÃO                ║
+// ╠══════════════════════════════════════════════╣
+// ║ Define rotas e estado global compartilhado   ║
+// ║                                              ║
+// ║ "/" → Dashboard                              ║
+// ║ "/pessoas" → Gestão de pessoas               ║
+// ╚══════════════════════════════════════════════╝
 export default function App() {
   const [pessoas, setPessoas] = useState(() =>
     lerJsonStorage(STORAGE_KEYS.pessoas, [])
@@ -2313,8 +2665,23 @@ export default function App() {
 // ╚══════════════════════════════════════════════╝
 
 const [perfilAtivo, setPerfilAtivo] = useState("household");
-
+// ╔══════════════════════════════════════════════╗
+// ║             SISTEMA DE TEMAS                 ║
+// ╠══════════════════════════════════════════════╣
+// ║ Perfil → usa tema da pessoa                  ║
+// ║ Household → mistura média dos temas          ║
+// ║                                              ║
+// ║ ⚠ Impacta TODA a UI                          ║
+// ╚══════════════════════════════════════════════╝
 const temaAtivo = useMemo(() => {
+// ╔══════════════════════════════════════════════╗
+// ║        SISTEMA DE VISÃO (PERFIL vs GLOBAL)   ║
+// ╠══════════════════════════════════════════════╣
+// ║ Household → mostra tudo agregado             ║
+// ║ Perfil → filtra por pessoa                   ║
+// ║                                              ║
+// ║ ⚠ Afeta TODOS os cálculos abaixo             ║
+// ╚══════════════════════════════════════════════╝
   const ehHousehold = perfilAtivo === "household";
 
   const pessoaAtiva = pessoas.find(
