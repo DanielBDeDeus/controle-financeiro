@@ -5,12 +5,31 @@ import { useNavigate } from "react-router-dom";
 export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) {
   const navigate = useNavigate();
 
+  // ╔══════════════════════════════════════════════╗
+  // ║              ESTADOS DO FORMULÁRIO           ║
+  // ╚══════════════════════════════════════════════╝
+
   const [nomePessoa, setNomePessoa] = useState("");
   const [salarioPessoa, setSalarioPessoa] = useState("");
   const [erro, setErro] = useState("");
 
+  // ╔══════════════════════════════════════════════╗
+  // ║         CONTROLE DE PAGAMENTO IRREGULAR      ║
+  // ╚══════════════════════════════════════════════╝
+
+  const [pagamentoIrregular, setPagamentoIrregular] = useState(false);
+  const [dataPagamentoOverride, setDataPagamentoOverride] = useState("");
+
+  // ╔══════════════════════════════════════════════╗
+  // ║          CONTROLE DE AJUSTE DE SALDO         ║
+  // ╚══════════════════════════════════════════════╝
+
   const [valorSaldo, setValorSaldo] = useState("");
   const [pessoaSelecionada, setPessoaSelecionada] = useState(null);
+
+  // ╔══════════════════════════════════════════════╗
+  // ║              CRIAÇÃO DE PESSOA               ║
+  // ╚══════════════════════════════════════════════╝
 
   function salvarPessoa() {
     const nome = nomePessoa.trim();
@@ -25,6 +44,11 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
       return;
     }
 
+    if (pagamentoIrregular && !dataPagamentoOverride) {
+      setErro("Informe a data de pagamento deste mês.");
+      return;
+    }
+
     const salario = paraNumero(salarioPessoa);
 
     const novaPessoa = {
@@ -33,6 +57,11 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
       salario,
       saldo: salario,
       tema: "cassette_neon",
+
+      pagamentoIrregular,
+      dataPagamentoOverride: pagamentoIrregular
+        ? dataPagamentoOverride
+        : null,
     };
 
     setPessoas((prev) => [...prev, novaPessoa]);
@@ -40,11 +69,21 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
     setNomePessoa("");
     setSalarioPessoa("");
     setErro("");
+    setPagamentoIrregular(false);
+    setDataPagamentoOverride("");
   }
+
+  // ╔══════════════════════════════════════════════╗
+  // ║              EXCLUSÃO DE PESSOA              ║
+  // ╚══════════════════════════════════════════════╝
 
   function excluirPessoa(id) {
     setPessoas((prev) => prev.filter((p) => p.id !== id));
   }
+
+  // ╔══════════════════════════════════════════════╗
+  // ║              ALTERAÇÃO DE SALDO              ║
+  // ╚══════════════════════════════════════════════╝
 
   function alterarSaldo(id, valor) {
     const numero = parseFloat(valor.replace(",", "."));
@@ -60,9 +99,17 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
     setPessoaSelecionada(null);
   }
 
+  // ╔══════════════════════════════════════════════╗
+  // ║        FILTRO DE CONTAS POR PESSOA           ║
+  // ╚══════════════════════════════════════════════╝
+
   function contasDaPessoa(id) {
     return contas.filter((c) => c.quemPagouId === id && !c.pago);
   }
+
+  // ╔══════════════════════════════════════════════╗
+  // ║         IDENTIFICA PRÓXIMA CONTA             ║
+  // ╚══════════════════════════════════════════════╝
 
   function proximaConta(id) {
     const lista = contasDaPessoa(id);
@@ -73,8 +120,16 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
     )[0];
   }
 
+  // ╔══════════════════════════════════════════════╗
+  // ║                RENDERIZAÇÃO                 ║
+  // ╚══════════════════════════════════════════════╝
+
   return (
     <div style={pageStyle(temaAtivo)}>
+      {/* ╔════════════════════════════════════════╗
+          ║                HEADER                 ║
+          ╚════════════════════════════════════════╝ */}
+
       <div style={{ marginBottom: 30 }}>
         <h1 style={{ margin: 0, fontSize: 42 }}>Pessoas</h1>
 
@@ -83,7 +138,10 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
         </button>
       </div>
 
-      {/* FORM */}
+      {/* ╔════════════════════════════════════════╗
+          ║                FORMULÁRIO              ║
+          ╚════════════════════════════════════════╝ */}
+
       <div style={card}>
         <h2>Adicionar pessoa</h2>
 
@@ -97,20 +155,55 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
         <input
           placeholder="Salário"
           value={salarioPessoa}
-          onChange={(e) => setSalarioPessoa(e.target.value)}
+          onChange={(e) => {
+            const valor = e.target.value
+              .replace(/[^\d,]/g, "")
+              .replace(/(,.*),/g, "$1");
+
+            setSalarioPessoa(valor);
+          }}
           style={input}
         />
 
+        {/* ╔════════════════════════════════════╗
+            ║ PAGAMENTO IRREGULAR (TOGGLE)     ║
+            ╚════════════════════════════════════╝ */}
+
+        <label style={{ marginTop: 10, display: "block" }}>
+          <input
+            type="checkbox"
+            checked={pagamentoIrregular}
+            onChange={(e) => setPagamentoIrregular(e.target.checked)}
+          />{" "}
+          Recebimento irregular este mês
+        </label>
+
+        {/* ╔════════════════════════════════════╗
+            ║ DATA DE PAGAMENTO (OVERRIDE)     ║
+            ╚════════════════════════════════════╝ */}
+
+        {pagamentoIrregular && (
+          <input
+            type="date"
+            value={dataPagamentoOverride}
+            onChange={(e) => setDataPagamentoOverride(e.target.value)}
+            style={input}
+          />
+        )}
+
         <div style={{ marginTop: 10 }}>
-  <button onClick={salvarPessoa} style={button}>
-    + Adicionar
-  </button>
-</div>
+          <button onClick={salvarPessoa} style={button}>
+            + Adicionar
+          </button>
+        </div>
 
         {erro && <p style={{ color: "red" }}>{erro}</p>}
       </div>
 
-      {/* LISTA */}
+      {/* ╔════════════════════════════════════════╗
+          ║              LISTA DE PESSOAS          ║
+          ╚════════════════════════════════════════╝ */}
+
       <div style={{ marginTop: 30 }}>
         {pessoas.map((p) => {
           const contasPessoa = contasDaPessoa(p.id);
@@ -120,12 +213,31 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
             <div key={p.id} style={personCard}>
               <div>
                 <strong style={{ fontSize: 18 }}>{p.nome}</strong>
+
                 <div style={{ color: "#c3d0dc", marginTop: 4 }}>
-  Saldo: <strong>R$ {p.saldo}</strong>
-</div>
+                  Saldo: <strong>R$ {p.saldo}</strong>
+                </div>
+
+                {/* ╔══════════════════════════════╗
+                    ║ PREVISÃO DE RECEBIMENTO     ║
+                    ╚══════════════════════════════╝ */}
+
+                {p.pagamentoIrregular && p.dataPagamentoOverride && (
+                  <div style={{ fontSize: 12, opacity: 0.7 }}>
+                    Recebe em{" "}
+                    {Math.ceil(
+                      (new Date(p.dataPagamentoOverride) - new Date()) /
+                        (1000 * 60 * 60 * 24)
+                    )}{" "}
+                    dias
+                  </div>
+                )}
               </div>
 
-              {/* gráfico fake simples */}
+              {/* ╔══════════════════════════════╗
+                  ║      BARRA VISUAL DE SALDO   ║
+                  ╚══════════════════════════════╝ */}
+
               <div style={barContainer}>
                 <div
                   style={{
@@ -135,7 +247,10 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
                 />
               </div>
 
-              {/* saldo controls */}
+              {/* ╔══════════════════════════════╗
+                  ║      CONTROLE DE SALDO       ║
+                  ╚══════════════════════════════╝ */}
+
               {pessoaSelecionada === p.id ? (
                 <div>
                   <input
@@ -172,7 +287,10 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
                 </button>
               )}
 
-              {/* contas info */}
+              {/* ╔══════════════════════════════╗
+                  ║        CONTAS ASSOCIADAS     ║
+                  ╚══════════════════════════════╝ */}
+
               <div style={{ marginTop: 10 }}>
                 <div>Contas pendentes: {contasPessoa.length}</div>
 
@@ -183,10 +301,7 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
                 )}
               </div>
 
-              <button
-                onClick={() => excluirPessoa(p.id)}
-                style={danger}
-              >
+              <button onClick={() => excluirPessoa(p.id)} style={danger}>
                 Excluir
               </button>
             </div>
@@ -197,7 +312,9 @@ export default function PessoasPage({ pessoas, setPessoas, contas, temaAtivo }) 
   );
 }
 
-// ===== styles =====
+// ╔══════════════════════════════════════════════╗
+// ║                ESTILOS GERAIS                ║
+// ╚══════════════════════════════════════════════╝
 
 const pageStyle = (temaAtivo = {}) => ({
   minHeight: "100vh",
@@ -235,7 +352,6 @@ const button = {
   border: "none",
   fontWeight: "700",
   cursor: "pointer",
-  width: "fit-content",
 };
 
 const secondary = {

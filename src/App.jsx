@@ -297,13 +297,36 @@ function getContaUrgencia(conta) {
 
   return "normal";
 }
+function getUrgenciaFechamento(cartao) {
+  if (cartao.tipo !== "credito" || !cartao.diaFechamento) {
+    return "normal";
+  }
+
+  const hoje = new Date();
+  const diaHoje = hoje.getDate();
+  const diaFechamento = cartao.diaFechamento;
+
+  let diffDias = diaFechamento - diaHoje;
+
+  // passou do fechamento → próxima fatura
+  if (diffDias < 0) {
+    diffDias += 30;
+  }
+
+  if (diffDias === 0) return "critico";
+  if (diffDias <= 1) return "critico";
+  if (diffDias <= 3) return "alto";
+  if (diffDias <= 7) return "medio";
+
+  return "normal";
+}
 
 const RESET_MESSAGES = [
   "☢ Tem certeza que quer apagar tudo?",
   "☢ Isso vai apagar TODOS os dados salvos.",
   "☢ ÚLTIMA CHANCE. Apagar tudo mesmo?",
 ];
-function Dashboard({ pessoas, setPessoas, contas, setContas }) {
+function Dashboard({ pessoas, setPessoas, contas, setContas, temaAtivo, perfilAtivo, setPerfilAtivo }) {
 const navigate = useNavigate();
 // ╔══════════════════════════════════════════════╗
 // ║        DEFINIÇÃO DO PERFIL ATIVO             ║
@@ -311,10 +334,6 @@ const navigate = useNavigate();
 // ║ household = visão combinada da casa          ║
 // ║ qualquer outro valor = id da pessoa ativa    ║
 // ╚══════════════════════════════════════════════╝
-  const [perfilAtivo, setPerfilAtivo] = useState(
-    () => lerTextoStorage(STORAGE_KEYS.perfilAtivo) || "household"
-  );
-
 // ╔══════════════════════════════════════════════╗
 // ║         TEMA DA VISÃO CONJUNTA               ║
 // ╚══════════════════════════════════════════════╝
@@ -369,6 +388,7 @@ const [layout, setLayout] = useState([
 
   const [nomeCartao, setNomeCartao] = useState("");
   const [tipoCartao, setTipoCartao] = useState("credito");
+  const [diaFechamento, setDiaFechamento] = useState("");
   const [erroCartao, setErroCartao] = useState("");
 
 // ╔══════════════════════════════════════════════╗
@@ -559,7 +579,10 @@ function alterarSaldoPessoa(idPessoa, valor, comentario = "") {
       setErroCartao("Digite um nome para o cartão.");
       return;
     }
-
+if (tipoCartao === "credito" && !diaFechamento) {
+  setErroCartao("Informe o dia de fechamento.");
+  return;
+}
     const duplicado = cartoes.some(
       (cartaoExistente) =>
         cartaoExistente.nome.toLowerCase() === nomeNormalizado &&
@@ -572,14 +595,17 @@ function alterarSaldoPessoa(idPessoa, valor, comentario = "") {
     }
 
     const novoCartao = {
-      id: Date.now(),
-      nome: nomeCartao.trim(),
-      tipo: tipoCartao,
-    };
+  id: Date.now(),
+  nome: nomeCartao.trim(),
+  tipo: tipoCartao,
+  diaFechamento:
+    tipoCartao === "credito" ? Number(diaFechamento) : null,
+};
 
     setCartoes([...cartoes, novoCartao]);
     setNomeCartao("");
     setErroCartao("");
+    setDiaFechamento("");
   }
 
 // ╔══════════════════════════════════════════════╗
@@ -891,61 +917,7 @@ function marcarContaComoPaga(idConta) {
     );
   }, [ehHousehold, perfilAtivo, pessoas]);
 
-const temaAtivo = useMemo(() => {
-// ╔══════════════════════════════════════════════╗
-// ║             VISÃO INDIVIDUAL                 ║
-// ╚══════════════════════════════════════════════╝
-  if (!ehHousehold && pessoaAtiva) {
-    return THEMES[pessoaAtiva.tema] ?? THEMES.cassette_neon;
-  }
 
-// ╔══════════════════════════════════════════════╗
-// ║               CASO PADRÃO                    ║
-// ╚══════════════════════════════════════════════╝
-  if (pessoas.length === 0) {
-    return THEMES.cassette_neon;
-  }
-
-// ╔══════════════════════════════════════════════╗
-// ║       HOUSEHOLD (MÉDIA DAS CORES)            ║
-// ╚══════════════════════════════════════════════╝
-  const cores = pessoas.map(
-    (p) => THEMES[p.tema] ?? THEMES.cassette_neon
-  );
-
-  const avg = (arr) =>
-    Math.floor(arr.reduce((a, b) => a + b, 0) / arr.length);
-
-  const hexToRgb = (hex) => {
-    const h = hex.replace("#", "");
-    return [
-      parseInt(h.substring(0, 2), 16),
-      parseInt(h.substring(2, 4), 16),
-      parseInt(h.substring(4, 6), 16),
-    ];
-  };
-
-  const rgbToHex = ([r, g, b]) =>
-    `#${[r, g, b]
-      .map((v) => v.toString(16).padStart(2, "0"))
-      .join("")}`;
-
-  const bgColors = cores.map((t) => {
-    const match = t.pageBg.match(/#([0-9a-f]{6})/i);
-    return hexToRgb(match ? match[0] : "#0d141c");
-  });
-
-  const avgColor = [
-    avg(bgColors.map((c) => c[0])),
-    avg(bgColors.map((c) => c[1])),
-    avg(bgColors.map((c) => c[2])),
-  ];
-
-  return {
-    ...THEMES.cassette_neon,
-    pageBg: rgbToHex(avgColor),
-  };
-}, [ehHousehold, pessoaAtiva, pessoas]);
 
   const gastosFiltrados = useMemo(() => {
     if (ehHousehold) {
@@ -1954,6 +1926,28 @@ footer: {
               <option value="credito">Crédito</option>
               <option value="debito">Débito</option>
             </select>
+            {tipoCartao === "credito" && (
+  <input
+  type="date"
+  value={
+    diaFechamento
+      ? `2024-01-${String(diaFechamento).padStart(2, "0")}`
+      : ""
+  }
+  onChange={(e) => {
+    const date = e.target.value;
+
+    if (!date) {
+      setDiaFechamento("");
+      return;
+    }
+
+    const day = new Date(date).getDate();
+    setDiaFechamento(day);
+  }}
+  style={styles.input}
+/>
+)}
 
             <button
   onClick={adicionarCartao}
@@ -1975,7 +1969,34 @@ footer: {
 ) : (
   cartoes.map((cartao) => (
                 <li key={cartao.id} style={styles.itemLista}>
-                  <span style={styles.itemText}>{cartao.nome}</span>
+                  <span style={styles.itemText}>
+  {cartao.nome}
+  {cartao.tipo === "credito" && cartao.diaFechamento && (
+  <span
+    style={{
+      marginLeft: 8,
+      fontSize: 12,
+      opacity: 0.9,
+
+      ...(temaAtivo.urgency?.[getUrgenciaFechamento(cartao)]?.border && {
+        border: temaAtivo.urgency[getUrgenciaFechamento(cartao)].border,
+        padding: "2px 6px",
+        borderRadius: 6,
+      }),
+
+      ...(temaAtivo.urgency?.[getUrgenciaFechamento(cartao)]?.bg && {
+        background: temaAtivo.urgency[getUrgenciaFechamento(cartao)].bg,
+      }),
+
+      ...(temaAtivo.urgency?.[getUrgenciaFechamento(cartao)]?.glow && {
+        boxShadow: temaAtivo.urgency[getUrgenciaFechamento(cartao)].glow,
+      }),
+    }}
+  >
+    (fecha dia {cartao.diaFechamento})
+  </span>
+)}
+</span>
 
                   <span
                     style={{
@@ -2287,6 +2308,65 @@ export default function App() {
   lerJsonStorage(STORAGE_KEYS.contas, [])
 );
 
+// ╔══════════════════════════════════════════════╗
+// ║        TEMA + PERFIL GLOBAL                  ║
+// ╚══════════════════════════════════════════════╝
+
+const [perfilAtivo, setPerfilAtivo] = useState("household");
+
+const temaAtivo = useMemo(() => {
+  const ehHousehold = perfilAtivo === "household";
+
+  const pessoaAtiva = pessoas.find(
+    (p) => String(p.id) === String(perfilAtivo)
+  );
+
+  if (!ehHousehold && pessoaAtiva) {
+    return THEMES[pessoaAtiva.tema] ?? THEMES.cassette_neon;
+  }
+
+  if (pessoas.length === 0) {
+    return THEMES.cassette_neon;
+  }
+
+  const cores = pessoas.map(
+    (p) => THEMES[p.tema] ?? THEMES.cassette_neon
+  );
+
+  const avg = (arr) =>
+    Math.floor(arr.reduce((a, b) => a + b, 0) / arr.length);
+
+  const hexToRgb = (hex) => {
+    const h = hex.replace("#", "");
+    return [
+      parseInt(h.substring(0, 2), 16),
+      parseInt(h.substring(2, 4), 16),
+      parseInt(h.substring(4, 6), 16),
+    ];
+  };
+
+  const rgbToHex = ([r, g, b]) =>
+    `#${[r, g, b]
+      .map((v) => v.toString(16).padStart(2, "0"))
+      .join("")}`;
+
+  const bgColors = cores.map((t) => {
+    const match = t.pageBg.match(/#([0-9a-f]{6})/i);
+    return hexToRgb(match ? match[0] : "#0d141c");
+  });
+
+  const avgColor = [
+    avg(bgColors.map((c) => c[0])),
+    avg(bgColors.map((c) => c[1])),
+    avg(bgColors.map((c) => c[2])),
+  ];
+
+  return {
+    ...THEMES.cassette_neon,
+    pageBg: rgbToHex(avgColor),
+  };
+}, [perfilAtivo, pessoas]);
+
   useEffect(() => {
     window.localStorage.setItem(
       STORAGE_KEYS.pessoas,
@@ -2307,22 +2387,26 @@ useEffect(() => {
       path="/"
       element={
         <Dashboard
-          pessoas={pessoas}
-          setPessoas={setPessoas}
-          contas={contas}
-          setContas={setContas}
-        />
+  pessoas={pessoas}
+  setPessoas={setPessoas}
+  contas={contas}
+  setContas={setContas}
+  temaAtivo={temaAtivo}
+  perfilAtivo={perfilAtivo}
+  setPerfilAtivo={setPerfilAtivo}
+/>
       }
     />
 
     <Route
       path="/pessoas"
       element={
-        <PessoasPage
-          pessoas={pessoas}
-          setPessoas={setPessoas}
-          contas={contas}
-        />
+<PessoasPage
+  pessoas={pessoas}
+  setPessoas={setPessoas}
+  contas={contas}
+  temaAtivo={temaAtivo}
+/>
       }
     />
 
