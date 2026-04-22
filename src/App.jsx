@@ -498,6 +498,7 @@ const [layout, setLayout] = useState([
   const [pessoaSelecionada, setPessoaSelecionada] = useState("");
   const [gastoEmEdicaoId, setGastoEmEdicaoId] = useState(null);
   const [erroGasto, setErroGasto] = useState("");
+  const [isPagamentoFatura, setIsPagamentoFatura] = useState(false);
   
 
 // ╔══════════════════════════════════════════════╗
@@ -740,6 +741,8 @@ if (tipoCartao === "credito" && !limiteCartao) {
   setErroCartao("Informe o limite do cartão.");
   return;
 }
+const diaFechamentoNumero = parseInt(diaFechamento.split("/")[0], 10);
+const diaVencimentoNumero = parseInt(diaVencimento.split("/")[0], 10);
 if (
   tipoCartao === "credito" &&
   (
@@ -773,8 +776,6 @@ if (
       setErroCartao("Esse cartão já existe com esse tipo.");
       return;
     }
-const diaFechamentoNumero = parseInt(diaFechamento.split("/")[0], 10);
-const diaVencimentoNumero = parseInt(diaVencimento.split("/")[0], 10);
     const novoCartao = {
   id: Date.now(),
   nome: nomeCartao.trim(),
@@ -859,6 +860,7 @@ function excluirCartao(idCartao) {
 // ╚══════════════════════════════════════════════╝
 
   function limparFormularioGasto() {
+    setIsPagamentoFatura(false);
     setNomeGasto("");
     setValorGasto("");
     setCartaoSelecionado("");
@@ -875,25 +877,25 @@ function excluirCartao(idCartao) {
 // ║                                              ║
 // ║ ⚠ Toda alteração passa por aqui              ║
 // ╚══════════════════════════════════════════════╝
-  function recalcularTotais(listaDeGastos) {
-    const totalDebito = listaDeGastos
-      .filter((gasto) => gasto.tipo === "debito")
-      .reduce((acumulador, gasto) => acumulador + paraNumero(gasto.valor), 0);
+function recalcularTotais(listaDeGastos) {
+  const totalDebito = listaDeGastos
+    .filter((g) => g.tipo === "debito")
+    .reduce((acc, g) => acc + paraNumero(g.valor), 0);
 
-    const totalCredito = listaDeGastos
-      .filter((gasto) => gasto.tipo === "credito")
-      .reduce((acumulador, gasto) => acumulador + paraNumero(gasto.valor), 0);
-    // ╔══════════════════════════════════════════════╗
-    // ║              TOTAL DE ENTRADAS               ║
-    // ╚══════════════════════════════════════════════╝
-    const totalEntradas = listaDeGastos
-      .filter((gasto) => gasto.tipo === "entrada")
-      .reduce((acc, gasto) => acc + paraNumero(gasto.valor), 0);
-        setGastoDebito(totalDebito);
-        setFaturaAtual(totalCredito);
-        // ⚠ entradas não impactam fatura nem débito diretamente
-        // ficam disponíveis para analytics/graph
-  }
+  const totalCredito = listaDeGastos
+    .filter((g) => g.tipo === "credito")
+    .reduce((acc, g) => acc + paraNumero(g.valor), 0);
+
+  const totalPagamentosFatura = listaDeGastos
+    .filter((g) => g.tipo === "pagamento_fatura")
+    .reduce((acc, g) => acc + paraNumero(g.valor), 0);
+
+  // 🔥 fatura REAL = crédito - pagamentos
+  const faturaReal = totalCredito - totalPagamentosFatura;
+
+  setGastoDebito(totalDebito);
+  setFaturaAtual(faturaReal);
+}
 // ╔══════════════════════════════════════════════╗
 // ║        FLUXO PRINCIPAL DE GASTOS             ║
 // ╠══════════════════════════════════════════════╣
@@ -947,6 +949,53 @@ function excluirCartao(idCartao) {
   }
 
   const valor = paraNumero(valorGasto);
+  // ╔══════════════════════════════════════════════╗
+// ║        PAGAMENTO DE FATURA (EXPLÍCITO)       ║
+// ╚══════════════════════════════════════════════╝
+if (isPagamentoFatura) {
+  if (cartao.tipo !== "credito") {
+    setErroGasto("Pagamento de fatura só pode ser feito em cartão de crédito.");
+    return;
+  }
+
+  // 🔻 reduz saldo da pessoa
+  const pessoasAtualizadas = pessoas.map(p =>
+    p.id === pessoa.id
+      ? { ...p, saldo: (p.saldo || 0) - valor }
+      : p
+  );
+
+  setPessoas(pessoasAtualizadas);
+const cartoesAtualizados = cartoes.map(c =>
+  c.id === cartao.id
+    ? {
+        ...c,
+        limiteUsado: Math.max((c.limiteUsado || 0) - valor, 0),
+      }
+    : c
+);
+
+setCartoes(cartoesAtualizados);
+  // 🔻 registra como tipo especial
+  const pagamentoFatura = {
+    id: Date.now(),
+    nome: nomeNormalizado,
+    valor,
+    cartaoNome: cartao.nome,
+    tipo: "pagamento_fatura",
+    pessoaId: pessoa.id,
+    pessoaNome: pessoa.nome,
+  };
+
+  const novaLista = [...gastos, pagamentoFatura];
+  setGastos(novaLista);
+
+  recalcularTotais(novaLista);
+  limparFormularioGasto();
+  setIsPagamentoFatura(false);
+
+  return;
+}
 // ╔══════════════════════════════════════════════╗
 // ║           IMPACTO FINANCEIRO DO GASTO        ║
 // ╠══════════════════════════════════════════════╣
@@ -1040,7 +1089,18 @@ setTransacoes((prev) => [novaTransacao, ...prev]);
 
   const novaLista = [...gastos, novoGasto];
   setGastos(novaLista);
+if (cartao.tipo === "credito") {
+  const cartoesAtualizados = cartoes.map((c) =>
+    c.id === cartao.id
+      ? {
+          ...c,
+          limiteUsado: (c.limiteUsado || 0) + valor,
+        }
+      : c
+  );
 
+  setCartoes(cartoesAtualizados);
+}
 // ╔══════════════════════════════════════════════╗
 // ║         DESCONTA DO SALDO (DÉBITO)           ║
 // ╚══════════════════════════════════════════════╝
@@ -1268,11 +1328,17 @@ function excluirConta(idConta) {
       .reduce((acumulador, gasto) => acumulador + paraNumero(gasto.valor), 0);
   }, [gastosFiltrados]);
 
-  const faturaAtualFiltrada = useMemo(() => {
-    return gastosFiltrados
-      .filter((gasto) => gasto.tipo === "credito")
-      .reduce((acumulador, gasto) => acumulador + paraNumero(gasto.valor), 0);
-  }, [gastosFiltrados]);
+const faturaAtualFiltrada = useMemo(() => {
+  const totalCredito = gastosFiltrados
+    .filter((g) => g.tipo === "credito")
+    .reduce((acc, g) => acc + paraNumero(g.valor), 0);
+
+  const totalPagamentos = gastosFiltrados
+    .filter((g) => g.tipo === "pagamento_fatura")
+    .reduce((acc, g) => acc + paraNumero(g.valor), 0);
+
+  return totalCredito - totalPagamentos;
+}, [gastosFiltrados]);
 
   const salarioTotalFiltrado = useMemo(() => {
   if (ehHousehold) {
@@ -2629,7 +2695,14 @@ function salarioDisponivel(pessoa) {
                 </option>
               ))}
             </select>
-
+<label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
+  <input
+    type="checkbox"
+    checked={isPagamentoFatura}
+    onChange={(e) => setIsPagamentoFatura(e.target.checked)}
+  />
+  Pagamento de fatura
+</label>
             <button
   onClick={adicionarGasto}
   style={styles.button}
@@ -2685,17 +2758,21 @@ function salarioDisponivel(pessoa) {
                     </span>
 
                     <span
-                      style={{
-                        ...styles.badgeMini,
-                        ...(gasto.tipo === "debito"
-                              ? styles.badgeDebito
-                              : gasto.tipo === "credito"
-                              ? styles.badgeCredito
-                              : styles.badgeSaldo),
-                      }}
-                    >
-                      {gasto.tipo === "entrada" ? "entrada (saldo)" : gasto.tipo}
-                    </span>
+  style={{
+    ...styles.badgeMini,
+    ...(gasto.tipo === "debito"
+      ? styles.badgeDebito
+      : gasto.tipo === "credito"
+      ? styles.badgeCredito
+      : styles.badgeSaldo),
+  }}
+>
+  {gasto.tipo === "entrada"
+    ? "entrada (saldo)"
+    : gasto.tipo === "pagamento_fatura"
+    ? "pagamento fatura"
+    : gasto.tipo}
+</span>
                   </div>
 
                   <div style={styles.actionRow}>
