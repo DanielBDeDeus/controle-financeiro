@@ -285,6 +285,27 @@ function formatarMoeda(valor) {
     maximumFractionDigits: 2,
   }).format(numeroSeguro);
 }
+function formatarDataISOParaBR(dataISO) {
+  if (!dataISO) return "";
+
+  const partes = dataISO.split("-");
+  if (partes.length !== 3) return "";
+
+  const [ano, mes, dia] = partes;
+  return `${dia}/${mes}/${ano}`;
+}
+
+function abrirCalendarioPorId(id) {
+  const input = document.getElementById(id);
+  if (!input) return;
+
+  if (typeof input.showPicker === "function") {
+    input.showPicker();
+    return;
+  }
+
+  input.click();
+}
 // === DATE PARSER FIX START ===
 
 function parseDataBR(dataStr) {
@@ -475,7 +496,7 @@ const [layout, setLayout] = useState([
   const [cartoes, setCartoes] = useState(() =>
     lerJsonStorage(STORAGE_KEYS.cartoes, [])
   );
-
+  const [pessoaCartaoSelecionada, setPessoaCartaoSelecionada] = useState("");
   const [nomeCartao, setNomeCartao] = useState("");
   const [tipoCartao, setTipoCartao] = useState("credito");
   const [diaFechamento, setDiaFechamento] = useState("");
@@ -483,6 +504,7 @@ const [layout, setLayout] = useState([
   const [erroCartao, setErroCartao] = useState("");
   const [limiteCartao, setLimiteCartao] = useState("");
   const [limiteUsado, setLimiteUsado] = useState("");
+  const [cartaoEmEdicaoId, setCartaoEmEdicaoId] = useState(null);
 
 // ╔══════════════════════════════════════════════╗
 // ║                STATES DE GASTOS              ║
@@ -498,7 +520,20 @@ const [layout, setLayout] = useState([
   const [pessoaSelecionada, setPessoaSelecionada] = useState("");
   const [gastoEmEdicaoId, setGastoEmEdicaoId] = useState(null);
   const [erroGasto, setErroGasto] = useState("");
+  const [temTarifaCredito, setTemTarifaCredito] = useState(false);
+  const [valorTarifa, setValorTarifa] = useState("");
+  const [cartaoFaturaSelecionado, setCartaoFaturaSelecionado] = useState("");
   const [isPagamentoFatura, setIsPagamentoFatura] = useState(false);
+  const [modoLancamento, setModoLancamento] = useState("gasto");
+// ╔══════════════════════════════════════════════╗
+// ║         COTAÇÃO DO DÓLAR (API)               ║
+// ╠══════════════════════════════════════════════╣
+// ║ Integração com API pública de câmbio         ║
+// ║ usada para exibir o valor atual do dólar     ║
+// ╚══════════════════════════════════════════════╝
+
+  const [cotacaoDolar, setCotacaoDolar] = useState(null);
+  const [erroCotacao, setErroCotacao] = useState("");
   
 
 // ╔══════════════════════════════════════════════╗
@@ -527,6 +562,38 @@ const [layout, setLayout] = useState([
 // ╠══════════════════════════════════════════════╣
 // ║ Sincroniza estados com localStorage          ║
 // ╚══════════════════════════════════════════════╝
+// ╔══════════════════════════════════════════════╗
+// ║          API: COTAÇÃO DO DÓLAR               ║
+// ╠══════════════════════════════════════════════╣
+// ║ Busca cotação BRL/USD em API pública         ║
+// ║ Executa automaticamente ao abrir o app       ║
+// ╚══════════════════════════════════════════════╝
+
+useEffect(() => {
+  async function carregarCotacaoDolar() {
+    try {
+      setErroCotacao("");
+
+      const response = await fetch(
+        "https://economia.awesomeapi.com.br/json/last/USD-BRL"
+      );
+
+      if (!response.ok) {
+        throw new Error("Falha ao carregar cotação");
+      }
+
+      const data = await response.json();
+
+      setCotacaoDolar(Number(data.USDBRL.bid));
+    } catch (error) {
+      console.error(error);
+
+      setErroCotacao("Erro ao carregar cotação");
+    }
+  }
+
+  carregarCotacaoDolar();
+}, []);
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -741,8 +808,13 @@ if (tipoCartao === "credito" && !limiteCartao) {
   setErroCartao("Informe o limite do cartão.");
   return;
 }
-const diaFechamentoNumero = parseInt(diaFechamento.split("/")[0], 10);
-const diaVencimentoNumero = parseInt(diaVencimento.split("/")[0], 10);
+const diaFechamentoNumero = diaFechamento
+  ? parseInt(diaFechamento.split("-")[2], 10)
+  : NaN;
+
+const diaVencimentoNumero = diaVencimento
+  ? parseInt(diaVencimento.split("-")[2], 10)
+  : NaN;
 if (
   tipoCartao === "credito" &&
   (
@@ -767,21 +839,58 @@ if (
   return;
 }
     const duplicado = cartoes.some(
-      (cartaoExistente) =>
-        cartaoExistente.nome.toLowerCase() === nomeNormalizado &&
-        cartaoExistente.tipo === tipoCartao
-    );
+  (cartaoExistente) =>
+    cartaoExistente.nome.toLowerCase() === nomeNormalizado &&
+    cartaoExistente.tipo === tipoCartao &&
+    cartaoExistente.id !== cartaoEmEdicaoId // 🔥 IGNORE SELF WHEN EDITING
+);
 
-    if (duplicado) {
-      setErroCartao("Esse cartão já existe com esse tipo.");
-      return;
-    }
-    const novoCartao = {
+if (duplicado) {
+  setErroCartao("Esse cartão já existe com esse tipo.");
+  return;
+}
+    // ✏️ EDIT MODE
+if (cartaoEmEdicaoId) {
+  const cartoesAtualizados = cartoes.map(c =>
+    c.id === cartaoEmEdicaoId
+      ? {
+          ...c,
+          nome: nomeCartao.trim(),
+          tipo: tipoCartao,
+          pessoaId: Number(pessoaCartaoSelecionada),
+          diaFechamento: diaFechamentoNumero || null,
+diaVencimento: diaVencimentoNumero || null,
+mesFechamento: diaFechamento ? diaFechamento.split("-")[1] : null,
+mesVencimento: diaVencimento ? diaVencimento.split("-")[1] : null,
+          limite: tipoCartao === "credito" ? paraNumero(limiteCartao) : null,
+          limiteUsado: tipoCartao === "credito" ? paraNumero(limiteUsado) : 0,
+        }
+      : c
+  );
+
+  setCartoes(cartoesAtualizados);
+
+  // RESET FORM
+  setCartaoEmEdicaoId(null);
+  setNomeCartao("");
+  setErroCartao("");
+  setDiaFechamento("");
+  setDiaVencimento("");
+  setLimiteCartao("");
+  setLimiteUsado("");
+
+  return;
+}
+const novoCartao = {
+mesFechamento: diaFechamento ? diaFechamento.split("-")[1] : null,
+mesVencimento: diaVencimento ? diaVencimento.split("-")[1] : null,
   id: Date.now(),
   nome: nomeCartao.trim(),
   tipo: tipoCartao,
+  pessoaId: Number(pessoaCartaoSelecionada), // 🔥 LINK CARD → PERSON
   diaFechamento:
   tipoCartao === "credito" &&
+  
   diaFechamentoNumero >= 1 &&
   diaFechamentoNumero <= 31
     ? diaFechamentoNumero
@@ -834,8 +943,10 @@ function excluirCartao(idCartao) {
   // ║   FILTRA GASTOS QUE NÃO USAM ESTE CARTÃO     ║
   // ╚══════════════════════════════════════════════╝
   const gastosRestantes = gastos.filter(
-    (g) => g.cartaoNome !== cartao.nome
-  );
+  (g) =>
+    g.cartaoNome !== cartao.nome &&
+    g.cartaoFaturaNome !== cartao.nome
+);
 
   // ╔══════════════════════════════════════════════╗
   // ║        REMOVE CARTÃO DA LISTA                ║
@@ -867,6 +978,8 @@ function excluirCartao(idCartao) {
     setPessoaSelecionada("");
     setGastoEmEdicaoId(null);
     setErroGasto("");
+    setTemTarifaCredito(false);
+    setValorTarifa("");
   }
 // ╔══════════════════════════════════════════════╗
 // ║        RECÁLCULO GLOBAL DE FINANÇAS          ║
@@ -891,7 +1004,9 @@ function recalcularTotais(listaDeGastos) {
     .reduce((acc, g) => acc + paraNumero(g.valor), 0);
 
   // 🔥 fatura REAL = crédito - pagamentos
-  const faturaReal = totalCredito - totalPagamentosFatura;
+const faturaReal = cartoes
+  .filter((c) => c.tipo === "credito")
+  .reduce((acc, c) => acc + paraNumero(c.limiteUsado || 0), 0);
 
   setGastoDebito(totalDebito);
   setFaturaAtual(faturaReal);
@@ -948,17 +1063,17 @@ function recalcularTotais(listaDeGastos) {
     return;
   }
 
-  const valor = paraNumero(valorGasto);
+  const valorBase = paraNumero(valorGasto);
+const tarifa = temTarifaCredito ? paraNumero(valorTarifa) : 0;
+const valor = valorBase + tarifa;
   // ╔══════════════════════════════════════════════╗
 // ║        PAGAMENTO DE FATURA (EXPLÍCITO)       ║
 // ╚══════════════════════════════════════════════╝
 if (isPagamentoFatura) {
-  if (cartao.tipo !== "credito") {
-    setErroGasto("Pagamento de fatura só pode ser feito em cartão de crédito.");
-    return;
-  }
-
-  // 🔻 reduz saldo da pessoa
+  if (!cartaoFaturaSelecionado) {
+  setErroGasto("Selecione qual fatura você está pagando.");
+  return;
+}
   const pessoasAtualizadas = pessoas.map(p =>
     p.id === pessoa.id
       ? { ...p, saldo: (p.saldo || 0) - valor }
@@ -966,8 +1081,9 @@ if (isPagamentoFatura) {
   );
 
   setPessoas(pessoasAtualizadas);
+
 const cartoesAtualizados = cartoes.map(c =>
-  c.id === cartao.id
+  c.id === Number(cartaoFaturaSelecionado)
     ? {
         ...c,
         limiteUsado: Math.max((c.limiteUsado || 0) - valor, 0),
@@ -975,17 +1091,22 @@ const cartoesAtualizados = cartoes.map(c =>
     : c
 );
 
-setCartoes(cartoesAtualizados);
-  // 🔻 registra como tipo especial
-  const pagamentoFatura = {
-    id: Date.now(),
-    nome: nomeNormalizado,
-    valor,
-    cartaoNome: cartao.nome,
-    tipo: "pagamento_fatura",
-    pessoaId: pessoa.id,
-    pessoaNome: pessoa.nome,
-  };
+  setCartoes(cartoesAtualizados);
+
+const cartaoDestino = cartoes.find(
+  (c) => c.id === Number(cartaoFaturaSelecionado)
+);
+
+const pagamentoFatura = {
+  id: Date.now(),
+  nome: nomeNormalizado,
+  valor,
+  cartaoNome: cartao.nome,
+  cartaoFaturaNome: cartaoDestino?.nome || "",
+  tipo: "pagamento_fatura",
+  pessoaId: pessoa.id,
+  pessoaNome: pessoa.nome,
+};
 
   const novaLista = [...gastos, pagamentoFatura];
   setGastos(novaLista);
@@ -1064,6 +1185,7 @@ setCartoes(cartoesAtualizados);
 // ╚══════════════════════════════════════════════╝
   const novoGasto = {
     id: Date.now(),
+    data: new Date().toISOString(),
     nome: nomeNormalizado,
     valor,
     cartaoNome: cartao.nome,
@@ -1149,13 +1271,27 @@ function editarGasto(gasto) {
 // ╔══════════════════════════════════════════════╗
 // ║        DEVOLVE SALDO (ERA DÉBITO)            ║
 // ╚══════════════════════════════════════════════╝
-  if (gasto.tipo === "debito") {
-    pessoasAtualizadas = pessoasAtualizadas.map(p =>
-      p.id === gasto.pessoaId
-        ? { ...p, saldo: (p.saldo || 0) + paraNumero(gasto.valor) }
-        : p
-    );
-  }
+if (gasto.tipo === "debito") {
+  pessoasAtualizadas = pessoasAtualizadas.map(p =>
+    p.id === gasto.pessoaId
+      ? { ...p, saldo: (p.saldo || 0) + paraNumero(gasto.valor) }
+      : p
+  );
+}
+
+// 🔥 ADD THIS BLOCK RIGHT BELOW
+if (gasto.tipo === "credito") {
+  const cartoesAtualizados = cartoes.map(c =>
+    c.nome === gasto.cartaoNome
+      ? {
+          ...c,
+          limiteUsado: Math.max((c.limiteUsado || 0) - paraNumero(gasto.valor), 0),
+        }
+      : c
+  );
+
+  setCartoes(cartoesAtualizados);
+}
 
   setPessoas(pessoasAtualizadas);
 
@@ -1209,7 +1345,10 @@ function adicionarConta() {
     id: Date.now(),
     nome: nomeConta.trim(),
     valor: paraNumero(valorConta),
-    dataVencimento: dataConta,
+    dataVencimento: (() => {
+  const [ano, mes, dia] = dataConta.split("-");
+  return `${dia}/${mes}/${ano}`;
+})(),
     pago: false,
     quemPagouId: pessoa.id,
     quemPagouNome: pessoa.nome,
@@ -1299,6 +1438,22 @@ function excluirConta(idConta) {
 // ║ Afeta TODOS os cálculos abaixo               ║
 // ╚══════════════════════════════════════════════╝
   const ehHousehold = perfilAtivo === "household";
+const hoje = new Date();
+
+const [mesSelecionado, setMesSelecionado] = useState(
+  localStorage.getItem("mesSelecionado") ||
+  String(hoje.getMonth() + 1).padStart(2, "0")
+);
+
+const [anoSelecionado, setAnoSelecionado] = useState(
+  localStorage.getItem("anoSelecionado") ||
+  String(hoje.getFullYear())
+);
+
+useEffect(() => {
+  localStorage.setItem("mesSelecionado", mesSelecionado);
+  localStorage.setItem("anoSelecionado", anoSelecionado);
+}, [mesSelecionado, anoSelecionado]);
 
   const pessoaAtiva = useMemo(() => {
     if (ehHousehold) {
@@ -1311,16 +1466,52 @@ function excluirConta(idConta) {
   }, [ehHousehold, perfilAtivo, pessoas]);
 
 
+const gastosFiltrados = useMemo(() => {
+  const filtrados = gastos.filter((gasto) => {
+    if (!gasto.data) return true;
 
-  const gastosFiltrados = useMemo(() => {
-    if (ehHousehold) {
-      return gastos;
-    }
+    const data = new Date(gasto.data);
 
-    return gastos.filter(
-      (gasto) => String(gasto.pessoaId) === String(perfilAtivo)
-    );
-  }, [ehHousehold, gastos, perfilAtivo]);
+    const mes = String(data.getMonth() + 1).padStart(2, "0");
+    const ano = String(data.getFullYear());
+
+    return mes === mesSelecionado && ano === anoSelecionado;
+  });
+
+  if (ehHousehold) return filtrados;
+
+  return filtrados.filter(
+    (gasto) => String(gasto.pessoaId) === String(perfilAtivo)
+  );
+}, [ehHousehold, gastos, perfilAtivo, mesSelecionado, anoSelecionado]);
+
+const gastosNoCiclo = useMemo(() => {
+  const base = ehHousehold
+    ? gastos
+    : gastos.filter(
+        (g) => String(g.pessoaId) === String(perfilAtivo)
+      );
+
+  return base.filter((gasto) => {
+    if (!gasto.data) return true;
+    if (gasto.tipo !== "credito") return false;
+
+    const cartao = cartoes.find(c => c.nome === gasto.cartaoNome);
+    if (!cartao || !cartao.diaFechamento) return false;
+
+    const dataGasto = new Date(gasto.data);
+
+    const diaFechamento = cartao.diaFechamento;
+
+    const ano = parseInt(anoSelecionado);
+    const mes = parseInt(mesSelecionado);
+
+    const fechamentoAtual = new Date(ano, mes - 1, diaFechamento);
+    const fechamentoAnterior = new Date(ano, mes - 2, diaFechamento);
+
+    return dataGasto > fechamentoAnterior && dataGasto <= fechamentoAtual;
+  });
+}, [gastos, cartoes, mesSelecionado, anoSelecionado, perfilAtivo, ehHousehold]);
 
   const gastoDebitoFiltrado = useMemo(() => {
     return gastosFiltrados
@@ -1329,16 +1520,11 @@ function excluirConta(idConta) {
   }, [gastosFiltrados]);
 
 const faturaAtualFiltrada = useMemo(() => {
-  const totalCredito = gastosFiltrados
-    .filter((g) => g.tipo === "credito")
-    .reduce((acc, g) => acc + paraNumero(g.valor), 0);
-
-  const totalPagamentos = gastosFiltrados
-    .filter((g) => g.tipo === "pagamento_fatura")
-    .reduce((acc, g) => acc + paraNumero(g.valor), 0);
-
-  return totalCredito - totalPagamentos;
-}, [gastosFiltrados]);
+  return gastosNoCiclo.reduce(
+    (acc, g) => acc + paraNumero(g.valor),
+    0
+  );
+}, [gastosNoCiclo]);
 
   const salarioTotalFiltrado = useMemo(() => {
   if (ehHousehold) {
@@ -1359,22 +1545,29 @@ const faturaAtualFiltrada = useMemo(() => {
 
 }, [ehHousehold, pessoaAtiva, pessoas]);
 
-  const saldoTotalPessoas = pessoas.reduce((acc, pessoa) => {
-  return acc + (pessoa.saldo || 0);
+const saldoTotalPessoas = pessoas.reduce((acc, p) => {
+  return acc + (p.saldo || 0);
 }, 0);
-  const totalContasPendentes = contas
+const contasFiltradas = useMemo(() => {
+  const filtradas = contas.filter((conta) => {
+    const data = parseDataBR(conta.dataVencimento);
+    if (!data) return false;
+
+    const mes = String(data.getMonth() + 1).padStart(2, "0");
+    const ano = String(data.getFullYear());
+
+    return mes === mesSelecionado && ano === anoSelecionado;
+  });
+
+  return filtradas;
+}, [contas, mesSelecionado, anoSelecionado]);
+
+const totalContasPendentes = contasFiltradas
   .filter((conta) => !conta.pago)
   .reduce((acc, conta) => acc + paraNumero(conta.valor), 0);
 
- const contasOrdenadas = [...contas].sort((a, b) => {
-// ╔══════════════════════════════════════════════╗
-// ║        CONTAS NÃO PAGAS PRIMEIRO             ║
-// ╚══════════════════════════════════════════════╝
+const contasOrdenadas = [...contasFiltradas].sort((a, b) => {
   if (a.pago !== b.pago) return a.pago ? 1 : -1;
-
-// ╔══════════════════════════════════════════════╗
-// ║          ORDENAR POR DATA                    ║
-// ╚══════════════════════════════════════════════╝
   return parseDataBR(a.dataVencimento) - parseDataBR(b.dataVencimento);
 });
 // ╔══════════════════════════════════════════════╗
@@ -1388,9 +1581,10 @@ const faturaAtualFiltrada = useMemo(() => {
 // ╚══════════════════════════════════════════════╝
 const saldoDisponivel =
   saldoTotalPessoas -
-  totalContasPendentes;
+  totalContasPendentes -
+  faturaAtualFiltrada;
 
-const totalContasPagas = contas
+const totalContasPagas = contasFiltradas
   .filter((c) => c.pago)
   .reduce((acc, c) => acc + paraNumero(c.valor), 0);
 
@@ -1423,11 +1617,31 @@ const dataGrafico = [
 const dadosSaldoPessoas = pessoas.map((p) => {
   const saldo = p.saldo || 0;
 
+  const creditoUsado = cartoes
+    .filter((c) => c.tipo === "credito" && c.pessoaId === p.id)
+    .reduce((acc, c) => acc + paraNumero(c.limiteUsado || 0), 0);
+
+  const debitoTotal = gastosFiltrados
+    .filter((g) => g.tipo === "debito" && g.pessoaId === p.id)
+    .reduce((acc, g) => acc + paraNumero(g.valor), 0);
+
   return {
-    name: p.nome,
-    saldo,
-    saldoNormalizado: Math.min(saldo, 5000), // clamp visual
-  };
+  name: p.nome,
+
+  saldo, // dinheiro real
+
+  // 💳 crédito DISPONÍVEL (limite - usado)
+  credito: cartoes
+    .filter((c) => c.tipo === "credito" && c.pessoaId === p.id)
+    .reduce((acc, c) => {
+      const limite = paraNumero(c.limite || 0);
+      const usado = paraNumero(c.limiteUsado || 0);
+      return acc + (limite - usado);
+    }, 0),
+
+  // 🧾 débito continua igual
+  debito: debitoTotal,
+};
 });
 
 // ╔══════════════════════════════════════════════╗
@@ -1467,9 +1681,14 @@ const COLORS = [
 // ║                                              ║
 // ║ ⚠ Irreversível                              ║
 // ╚══════════════════════════════════════════════╝
-  function limparTudo() {
-  setPessoas([]);
+function limparTudo() {
+  // 🔒 PRESERVE pessoas from localStorage
+  const pessoasSalvas = window.localStorage.getItem(STORAGE_KEYS.pessoas);
 
+  // ❌ DO NOT wipe pessoas state
+  // setPessoas([]); ← REMOVE THIS LINE
+
+  // 🧹 reset everything else
   setCartoes([]);
   setNomeCartao("");
   setTipoCartao("credito");
@@ -1489,19 +1708,22 @@ const COLORS = [
   setPerfilAtivo("household");
   setResetEtapa(0);
 
+  // 🧹 clear storage EXCEPT pessoas
   Object.values(STORAGE_KEYS).forEach((chave) => {
-    window.localStorage.removeItem(chave);
+    if (chave !== STORAGE_KEYS.pessoas) {
+      window.localStorage.removeItem(chave);
+    }
   });
+
+  // ♻️ restore pessoas in storage (safety)
+  if (pessoasSalvas) {
+    window.localStorage.setItem(STORAGE_KEYS.pessoas, pessoasSalvas);
+  }
+
+  // 🔄 reload UI
   setTimeout(() => {
-// ╔══════════════════════════════════════════════╗
-// ║           RESET FORÇADO DE ESTADO            ║
-// ╠══════════════════════════════════════════════╣
-// ║ Garante limpeza completa após reset          ║
-// ║                                              ║
-// ║ ⚠ Evita inconsistências de estado            ║
-// ╚══════════════════════════════════════════════╝
-  window.location.reload();
-}, 50);
+    window.location.reload();
+  }, 50);
 }
 
 function lidarComResetTotal() {
@@ -2015,6 +2237,20 @@ function salarioDisponivel(pessoa) {
 
   return true;
 }
+function diasParaReceber(pessoa) {
+  if (!pessoa.pagamentoIrregular || !pessoa.dataPagamentoOverride) {
+    return null;
+  }
+
+  const hoje = new Date();
+  const pagamento = new Date(pessoa.dataPagamentoOverride);
+
+  const diff = Math.ceil(
+    (pagamento - hoje) / (1000 * 60 * 60 * 24)
+  );
+
+  return diff > 0 ? diff : 0;
+}
     return (
   <div style={styles.container}>
       <div style={styles.shell}>
@@ -2079,14 +2315,29 @@ function salarioDisponivel(pessoa) {
         <div style={styles.topGrid}>
           <div style={styles.card}>
             <div style={styles.cardHeader}>
-              <h2 style={styles.cardTitle}>
-  <span className="material-symbols-outlined" style={styles.icon}>
-    visibility
-  </span>
-  Modo de visualização
-</h2>
-              <span style={styles.cardChip}>Perfil</span>
-            </div>
+  <h2 style={styles.cardTitle}>
+    <span className="material-symbols-outlined" style={styles.icon}>
+      visibility
+    </span>
+    Modo de visualização
+  </h2>
+
+  <span style={styles.cardChip}>Perfil</span>
+</div>
+
+<div style={{ padding: "0 18px 0 18px" }}>
+  <label style={styles.label}>Mês visualizado</label>
+  <input
+    type="month"
+    value={`${anoSelecionado}-${mesSelecionado}`}
+    onChange={(e) => {
+      const [ano, mes] = e.target.value.split("-");
+      setAnoSelecionado(ano);
+      setMesSelecionado(mes);
+    }}
+    style={styles.input}
+  />
+</div>
 
             <label style={styles.label}>Quem estamos visualizando?</label>
             <select
@@ -2298,34 +2549,94 @@ function salarioDisponivel(pessoa) {
       tick={{ fill: "#94a3b8", fontSize: 12 }}
     />
 
-    <Tooltip formatter={(v, _, item) => formatarMoeda(item.payload.saldo)} />
+    <Tooltip
+  content={({ active, payload }) => {
+    if (!active || !payload || !payload.length) return null;
 
-    <Bar
-// ╔══════════════════════════════════════════════╗
-// ║         NORMALIZAÇÃO VISUAL DO GRÁFICO       ║
-// ╠══════════════════════════════════════════════╣
-// ║ Evita barras desproporcionais                ║
-// ║                                              ║
-// ║ clamp: 0 → 100%                             ║
-// ╚══════════════════════════════════════════════╝
-      dataKey="saldoNormalizado"
-      radius={[8, 8, 8, 8]}
-      barSize={14}
-    >
-      {dadosSaldoPessoas.map((_, index) => (
-        <Cell key={index} fill={COLORS[index % COLORS.length]} />
-      ))}
-    </Bar>
+    const data = payload[0].payload;
+
+    const pessoa = pessoas.find(p => p.nome === data.name);
+
+    const dias = pessoa ? diasParaReceber(pessoa) : null;
+
+    return (
+      <div
+        style={{
+          background: "#111",
+          padding: 10,
+          borderRadius: 8,
+          color: "#fff",
+          fontSize: 12
+        }}
+      >
+        <div><strong>{data.name}</strong></div>
+
+        <div>💰 Saldo: {formatarMoeda(data.saldo)}</div>
+        <div>💳 Crédito: {formatarMoeda(data.credito)}</div>
+        <div>🧾 Débito: {formatarMoeda(data.debito)}</div>
+
+        {dias > 0 && (
+          <div style={{ color: "#f59e0b" }}>
+            ⏳ Recebe em {dias} dias
+          </div>
+        )}
+      </div>
+    );
+  }}
+/>
+
+<Bar dataKey="saldo" fill="#22c55e" name="Saldo" />
+<Bar dataKey="credito" fill="#f59e0b" name="Crédito" />
+<Bar dataKey="debito" fill="#ef4444" name="Débito" />
   </BarChart>
 </ResponsiveContainer>
   </div>
 
   {pessoas.map((pessoa) => (
     <div key={pessoa.id} style={styles.itemListaColuna}>
-      <div style={styles.itemLinhaSuperior}>
-        <strong>{pessoa.nome}</strong>
-        <span>{formatarMoeda(pessoa.saldo || 0)}</span>
-      </div>
+<div>
+  <strong>{pessoa.nome}</strong>
+
+  <div style={{ fontSize: 12 }}>
+  💰 Saldo: {
+    formatarMoeda(
+      salarioDisponivel(pessoa)
+        ? (pessoa.saldo || 0)
+        : (pessoa.saldo || 0) - paraNumero(pessoa.salario || 0)
+    )
+  }
+</div>
+
+  {diasParaReceber(pessoa) > 0 ? (
+    <div style={{ fontSize: 12, color: "#f59e0b" }}>
+      ⏳ Recebe {formatarMoeda(pessoa.salario)} em {diasParaReceber(pessoa)} dias
+    </div>
+  ) : (
+    <div style={{ fontSize: 12, color: "#22c55e" }}>
+      ✔ Salário disponível
+    </div>
+  )}
+
+<div style={{ fontSize: 12 }}>
+  💳 Crédito disponível: {formatarMoeda(
+    cartoes
+      .filter((c) => c.tipo === "credito" && c.pessoaId === pessoa.id)
+      .reduce((acc, c) => {
+        const limite = paraNumero(c.limite || 0);
+        const usado = paraNumero(c.limiteUsado || 0);
+        return acc + (limite - usado);
+      }, 0)
+  )}
+</div>
+
+  <div style={{ fontSize: 12 }}>
+    🧾 Débito: {formatarMoeda(
+      gastos
+        .filter((g) => g.tipo === "debito" && g.pessoaId === pessoa.id)
+        .reduce((acc, g) => acc + paraNumero(g.valor), 0)
+    )}
+  </div>
+</div>
 
       <div style={styles.actionRow}>
         <button
@@ -2436,6 +2747,17 @@ function salarioDisponivel(pessoa) {
                   {formatarMoeda(faturaAtualFiltrada)}
                 </span>
               </div>
+
+              <div style={styles.kpiRow}>
+                <span style={styles.kpiLabel}>Cotação do dólar</span>
+                <span style={{ ...styles.kpiValue, ...styles.resumoCredito }}>
+                  {erroCotacao
+  ? "Erro"
+  : cotacaoDolar != null
+  ? formatarMoeda(cotacaoDolar)
+  : "Carregando..."}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -2465,13 +2787,26 @@ function salarioDisponivel(pessoa) {
             />
 
             <select
-              value={tipoCartao}
-              onChange={(e) => setTipoCartao(e.target.value)}
-              style={styles.input}
-            >
-              <option value="credito">Crédito</option>
-              <option value="debito">Débito</option>
-            </select>
+  value={tipoCartao}
+  onChange={(e) => setTipoCartao(e.target.value)}
+  style={styles.input}
+>
+  <option value="credito">Crédito</option>
+  <option value="debito">Débito</option>
+</select>
+
+<select
+  value={pessoaCartaoSelecionada}
+  onChange={(e) => setPessoaCartaoSelecionada(e.target.value)}
+  style={styles.input}
+>
+  <option value="">Dono do cartão</option>
+  {pessoas.map((p) => (
+    <option key={p.id} value={p.id}>
+      {p.nome}
+    </option>
+  ))}
+</select>
             {tipoCartao === "credito" && (
   <>
 <div>
@@ -2482,20 +2817,48 @@ function salarioDisponivel(pessoa) {
     Fechamento da fatura
   </label>
 
-  <input
-    placeholder="dd/mm"
-    value={diaFechamento}
-    onChange={(e) => {
-      let v = e.target.value.replace(/\D/g, "");
+  <div style={{ position: "relative" }}>
+    <input
+      type="text"
+      value={formatarDataISOParaBR(diaFechamento)}
+      placeholder="dd/mm/aaaa"
+      readOnly
+      onClick={() => abrirCalendarioPorId("cartao-fechamento-picker")}
+      style={styles.input}
+    />
 
-      if (v.length >= 3) {
-        v = v.slice(0, 2) + "/" + v.slice(2, 4);
-      }
+    <button
+      type="button"
+      onClick={() => abrirCalendarioPorId("cartao-fechamento-picker")}
+      style={{
+        position: "absolute",
+        right: 10,
+        top: "50%",
+        transform: "translateY(-50%)",
+        background: "transparent",
+        border: "none",
+        cursor: "pointer",
+        color: temaAtivo.inputText,
+      }}
+    >
+      📅
+    </button>
 
-      setDiaFechamento(v.slice(0, 5));
-    }}
-    style={styles.input}
-  />
+    <input
+      id="cartao-fechamento-picker"
+      type="date"
+      value={diaFechamento}
+      onChange={(e) => setDiaFechamento(e.target.value)}
+      style={{
+        position: "absolute",
+        opacity: 0,
+        pointerEvents: "none",
+        width: 0,
+        height: 0,
+      }}
+      tabIndex={-1}
+    />
+  </div>
 </div>
 
 <div>
@@ -2506,20 +2869,48 @@ function salarioDisponivel(pessoa) {
     Vencimento da fatura
   </label>
 
-  <input
-    placeholder="dd/mm"
-    value={diaVencimento}
-    onChange={(e) => {
-      let v = e.target.value.replace(/\D/g, "");
+  <div style={{ position: "relative" }}>
+    <input
+      type="text"
+      value={formatarDataISOParaBR(diaVencimento)}
+      placeholder="dd/mm/aaaa"
+      readOnly
+      onClick={() => abrirCalendarioPorId("cartao-vencimento-picker")}
+      style={styles.input}
+    />
 
-      if (v.length >= 3) {
-        v = v.slice(0, 2) + "/" + v.slice(2, 4);
-      }
+    <button
+      type="button"
+      onClick={() => abrirCalendarioPorId("cartao-vencimento-picker")}
+      style={{
+        position: "absolute",
+        right: 10,
+        top: "50%",
+        transform: "translateY(-50%)",
+        background: "transparent",
+        border: "none",
+        cursor: "pointer",
+        color: temaAtivo.inputText,
+      }}
+    >
+      📅
+    </button>
 
-      setDiaVencimento(v.slice(0, 5));
-    }}
-    style={styles.input}
-  />
+    <input
+      id="cartao-vencimento-picker"
+      type="date"
+      value={diaVencimento}
+      onChange={(e) => setDiaVencimento(e.target.value)}
+      style={{
+        position: "absolute",
+        opacity: 0,
+        pointerEvents: "none",
+        width: 0,
+        height: 0,
+      }}
+      tabIndex={-1}
+    />
+  </div>
 </div>
 
     <input
@@ -2547,8 +2938,8 @@ function salarioDisponivel(pessoa) {
   style={styles.button}
   disabled={!nomeCartao}
 >
-              Adicionar cartão
-            </button>
+  {cartaoEmEdicaoId ? "Salvar cartão" : "Adicionar cartão"}
+</button>
 
             {erroCartao && <p style={styles.erro}>{erroCartao}</p>}
 
@@ -2595,7 +2986,16 @@ function salarioDisponivel(pessoa) {
               }),
             }}
           >
-            📅 Fecha: {cartao.diaFechamento || "-"} • Vence: {cartao.diaVencimento || "-"}
+            📅 Fecha: {
+  cartao.diaFechamento && cartao.mesFechamento
+    ? `${String(cartao.diaFechamento).padStart(2, "0")}/${cartao.mesFechamento}`
+    : "-"
+}
+ • Vence: {
+  cartao.diaVencimento && cartao.mesVencimento
+    ? `${String(cartao.diaVencimento).padStart(2, "0")}/${cartao.mesVencimento}`
+    : "-"
+}
           </span>
 
           <span style={{ fontSize: 12 }}>
@@ -2623,6 +3023,46 @@ function salarioDisponivel(pessoa) {
 
   <div style={styles.actionRow}>
     <button
+  onClick={() => {
+    setCartaoEmEdicaoId(cartao.id);
+    setNomeCartao(cartao.nome);
+    setTipoCartao(cartao.tipo);
+    setPessoaCartaoSelecionada(cartao.pessoaId || "");
+
+    if (cartao.tipo === "credito") {
+      const hoje = new Date();
+const anoAtual = hoje.getFullYear();
+
+// 🔥 DO NOT FORCE MONTH = CURRENT MONTH
+// instead, keep existing date if possible
+
+const mesFechamento = cartao.mesFechamento || String(hoje.getMonth() + 1).padStart(2, "0");
+const mesVencimento = cartao.mesVencimento || mesFechamento;
+
+setDiaFechamento(
+  `${anoAtual}-${mesFechamento}-${String(cartao.diaFechamento || 1).padStart(2, "0")}`
+);
+
+setDiaVencimento(
+  `${anoAtual}-${mesVencimento}-${String(cartao.diaVencimento || 1).padStart(2, "0")}`
+);
+      setLimiteCartao(
+  cartao.limite != null
+    ? Number(cartao.limite).toFixed(2).replace(".", ",")
+    : ""
+);
+      setLimiteUsado(
+  cartao.limiteUsado != null
+    ? Number(cartao.limiteUsado).toFixed(2).replace(".", ",")
+    : ""
+);
+    }
+  }}
+  style={styles.actionButton}
+>
+  Editar
+</button>
+    <button
       onClick={() => excluirCartao(cartao.id)}
       style={styles.actionButtonDanger}
     >
@@ -2647,54 +3087,122 @@ function salarioDisponivel(pessoa) {
               <span style={styles.cardChip}>Registro</span>
             </div>
 <div style={{ padding: "16px 18px 18px 18px" }}>
-            <input
-              type="text"
-              placeholder="Nome do gasto"
-              value={nomeGasto}
-              onChange={(e) => setNomeGasto(e.target.value)}
-              style={styles.input}
-            />
 
-            <input
-              type="text"
-              placeholder="Valor"
-              value={valorGasto}
-              onChange={(e) => {
-  const valor = e.target.value
-    .replace(/[^\d,]/g, "")   // only numbers + comma
-    .replace(/(,.*),/g, "$1"); // only ONE comma
+<div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+  <button
+    onClick={() => setModoLancamento("gasto")}
+    style={{
+      ...styles.buttonSecundario,
+      opacity: modoLancamento === "gasto" ? 1 : 0.5,
+    }}
+  >
+    💸 Gasto
+  </button>
 
-  setValorGasto(valor);
-}}
-              style={styles.input}
-            />
+  <button
+    onClick={() => setModoLancamento("conta")}
+    style={{
+      ...styles.buttonSecundario,
+      opacity: modoLancamento === "conta" ? 1 : 0.5,
+    }}
+  >
+    🧾 Conta
+  </button>
+</div>
+{modoLancamento === "gasto" && (
+  <>
+    <input
+      type="text"
+      placeholder="Nome do gasto"
+      value={nomeGasto}
+      onChange={(e) => setNomeGasto(e.target.value)}
+      style={styles.input}
+    />
 
-            <select
-              value={pessoaSelecionada}
-              onChange={(e) => setPessoaSelecionada(e.target.value)}
-              style={styles.input}
-            >
-              <option value="">Selecione uma pessoa</option>
-              {pessoas.map((pessoa) => (
-                <option key={pessoa.id} value={pessoa.id}>
-                  {pessoa.nome}
-                </option>
-              ))}
-            </select>
+    <input
+      type="text"
+      placeholder="Valor"
+      value={valorGasto}
+      onChange={(e) => {
+        const valor = e.target.value
+          .replace(/[^\d,]/g, "")
+          .replace(/(,.*),/g, "$1");
 
+        setValorGasto(valor);
+      }}
+      style={styles.input}
+    />
+  </>
+)}
+{modoLancamento === "conta" && (
+  <>
+    <input
+      placeholder="Nome da conta"
+      value={nomeConta}
+      onChange={(e) => setNomeConta(e.target.value)}
+      style={styles.input}
+    />
 
-            <select
-              value={cartaoSelecionado}
-              onChange={(e) => setCartaoSelecionado(e.target.value)}
-              style={styles.input}
-            >
-              <option value="">Selecione um cartão</option>
-              {cartoes.map((cartao) => (
-                <option key={cartao.id} value={cartao.id}>
-                  {cartao.nome} ({cartao.tipo})
-                </option>
-              ))}
-            </select>
+    <input
+      placeholder="Valor"
+      value={valorConta}
+      onChange={(e) =>
+        setValorConta(e.target.value.replace(/[^\d,]/g, ""))
+      }
+      style={styles.input}
+    />
+
+    <input
+      type="date"
+      value={dataConta}
+      onChange={(e) => setDataConta(e.target.value)}
+      style={styles.input}
+    />
+
+    <select
+      value={quemPagouConta}
+      onChange={(e) => setQuemPagouConta(e.target.value)}
+      style={styles.input}
+    >
+      <option value="">Quem vai pagar?</option>
+      {pessoas.map((p) => (
+        <option key={p.id} value={p.id}>
+          {p.nome}
+        </option>
+      ))}
+    </select>
+  </>
+)}
+{modoLancamento === "gasto" && (
+  <>
+    <select
+      value={pessoaSelecionada}
+      onChange={(e) => setPessoaSelecionada(e.target.value)}
+      style={styles.input}
+    >
+      <option value="">Selecione uma pessoa</option>
+      {pessoas.map((pessoa) => (
+        <option key={pessoa.id} value={pessoa.id}>
+          {pessoa.nome}
+        </option>
+      ))}
+    </select>
+
+    <select
+      value={cartaoSelecionado}
+      onChange={(e) => setCartaoSelecionado(e.target.value)}
+      style={styles.input}
+    >
+      <option value="">Selecione um cartão</option>
+
+      {cartoes.map((cartao) => (
+        <option key={cartao.id} value={cartao.id}>
+          {cartao.nome} ({cartao.tipo})
+        </option>
+      ))}
+    </select>
+  </>
+)}
 <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
   <input
     type="checkbox"
@@ -2703,17 +3211,63 @@ function salarioDisponivel(pessoa) {
   />
   Pagamento de fatura
 </label>
+{isPagamentoFatura && (
+  <select
+    value={cartaoFaturaSelecionado}
+    onChange={(e) => setCartaoFaturaSelecionado(e.target.value)}
+    style={styles.input}
+  >
+    <option value="">Selecione a fatura (cartão destino)</option>
+
+    {cartoes
+      .filter((c) => c.tipo === "credito")
+      .map((c) => (
+        <option key={c.id} value={c.id}>
+          {c.nome}
+        </option>
+      ))}
+  </select>
+)}
+<label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
+  <input
+    type="checkbox"
+    checked={temTarifaCredito}
+    onChange={(e) => setTemTarifaCredito(e.target.checked)}
+  />
+  Pix no crédito (com tarifa)
+</label>
+
+{temTarifaCredito && (
+  <input
+    type="text"
+    placeholder="Valor da tarifa"
+    value={valorTarifa}
+    onChange={(e) => {
+      const valor = e.target.value
+        .replace(/[^\d,]/g, "")
+        .replace(/(,.*),/g, "$1");
+
+      setValorTarifa(valor);
+    }}
+    style={styles.input}
+  />
+)}
             <button
-  onClick={adicionarGasto}
+  onClick={
+  modoLancamento === "gasto"
+    ? adicionarGasto
+    : adicionarConta
+}
   style={styles.button}
   disabled={
-    !nomeGasto ||
-    !valorGasto ||
-    !cartaoSelecionado ||
-    !pessoaSelecionada
-  }
+  modoLancamento === "gasto"
+    ? (!nomeGasto || !valorGasto || !cartaoSelecionado || !pessoaSelecionada)
+    : (!nomeConta || !valorConta || !dataConta || !quemPagouConta)
+}
 >
-              {gastoEmEdicaoId ? "Salvar gasto" : "Adicionar gasto"}
+              {modoLancamento === "gasto"
+  ? (gastoEmEdicaoId ? "Salvar gasto" : "Adicionar gasto")
+  : "Adicionar conta"}
             </button>
 
             {gastoEmEdicaoId && (
@@ -2834,19 +3388,48 @@ function salarioDisponivel(pessoa) {
     Vencimento da conta
   </label>
 
-  <input
-    placeholder="dd/mm/aaaa"
-    value={dataConta}
-    onChange={(e) => {
-      let v = e.target.value.replace(/\D/g, "");
+  <div style={{ position: "relative" }}>
+    <input
+      type="text"
+      value={formatarDataISOParaBR(dataConta)}
+      placeholder="dd/mm/aaaa"
+      readOnly
+      onClick={() => abrirCalendarioPorId("conta-vencimento-picker")}
+      style={styles.input}
+    />
 
-      if (v.length >= 3) v = v.slice(0, 2) + "/" + v.slice(2);
-      if (v.length >= 6) v = v.slice(0, 5) + "/" + v.slice(5);
+    <button
+      type="button"
+      onClick={() => abrirCalendarioPorId("conta-vencimento-picker")}
+      style={{
+        position: "absolute",
+        right: 10,
+        top: "50%",
+        transform: "translateY(-50%)",
+        background: "transparent",
+        border: "none",
+        cursor: "pointer",
+        color: temaAtivo.inputText,
+      }}
+    >
+      📅
+    </button>
 
-      setDataConta(v.slice(0, 10));
-    }}
-    style={styles.input}
-  />
+    <input
+      id="conta-vencimento-picker"
+      type="date"
+      value={dataConta}
+      onChange={(e) => setDataConta(e.target.value)}
+      style={{
+        position: "absolute",
+        opacity: 0,
+        pointerEvents: "none",
+        width: 0,
+        height: 0,
+      }}
+      tabIndex={-1}
+    />
+  </div>
 </div>
           <select
   value={quemPagouConta}
@@ -3004,9 +3587,6 @@ style={{
       </div>
     </div>
   );
-
- 
-
 }
 // ╔══════════════════════════════════════════════╗
 // ║             ROOT DA APLICAÇÃO                ║
@@ -3016,6 +3596,7 @@ style={{
 // ║ "/" → Dashboard                              ║
 // ║ "/pessoas" → Gestão de pessoas               ║
 // ╚══════════════════════════════════════════════╝
+
 export default function App() {
   
 
@@ -3143,16 +3724,16 @@ useEffect(() => {
     />
 
     <Route
-      path="/pessoas"
-      element={
-<PessoasPage
-  pessoas={pessoas}
-  setPessoas={setPessoas}
-  contas={contas}
-  temaAtivo={temaAtivo}
-/>
-      }
+  path="/pessoas"
+  element={
+    <PessoasPage
+      pessoas={pessoas}
+      setPessoas={setPessoas}
+      contas={contas}
+      temaAtivo={temaAtivo}
     />
+  }
+/>
 
   </Routes>
 </BrowserRouter>
