@@ -16,6 +16,10 @@ Sistema de controle financeiro para casais, com visão individual e conjunta.
 * Persistência de dados com localStorage
 * Reset completo do sistema
 
+## Deploy Online
+
+https://dividim-os.vercel.app/
+
 ## Como usar
 
 1. Cadastre uma ou mais pessoas
